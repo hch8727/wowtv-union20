@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>경품 추첨</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--ink:#14213d;--ink-deep:#0d1830;--gold:#c9a227;--gold-soft:#e6cf7a;--muted:#8a94ad;--err:#ff8a80}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
+       background-image:radial-gradient(ellipse at 50% 120%,#1f3161 0%,var(--ink) 55%)}
+  button{font:inherit;cursor:pointer;border:0;border-radius:14px}
+  /* 로그인 */
+  #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--ink);z-index:9}
+  #gate form{width:320px;text-align:center}
+  #gate input{width:100%;font:inherit;font-size:22px;padding:14px;border-radius:12px;border:0;text-align:center;letter-spacing:.3em}
+  #gate button{width:100%;margin-top:12px;padding:14px;font-size:18px;font-weight:700;background:var(--gold);color:var(--ink-deep)}
+  #gate .err{color:var(--err);margin-top:10px;min-height:1.4em}
+  /* 레이아웃 */
+  .wrap{height:100%;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr;gap:0 40px;padding:36px 56px}
+  header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+  .ci{height:44px;filter:brightness(0) invert(1)}
+  .logo{width:180px}
+  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .prize{font-size:30px;color:var(--gold-soft);font-weight:500}
+  .prize b{display:inline-block;background:var(--gold);color:var(--ink-deep);border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
+  .names{margin:26px 0 34px;min-height:200px;display:flex;flex-wrap:wrap;gap:18px 28px;justify-content:center;align-items:center;max-width:1100px}
+  .name{font-size:96px;line-height:1.05;font-weight:800;letter-spacing:-.03em}
+  .names.rolling .name{color:var(--muted);filter:blur(1px)}
+  .names.win .name{animation:reveal .6s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes reveal{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .hint{color:var(--muted);font-size:20px}
+  .ctrl{display:flex;gap:12px;margin-top:10px}
+  .ctrl button{padding:16px 34px;font-size:20px;font-weight:700;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+  .ctrl button.primary{background:var(--gold);color:var(--ink-deep);border-color:var(--gold);font-size:24px;padding:18px 48px}
+  .ctrl button:disabled{opacity:.35;cursor:default}
+  /* 사이드 */
+  aside{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .pool{font-size:18px;color:#dfe4f0}.pool b{color:var(--gold-soft);font-size:24px}
+  select{font:inherit;font-size:18px;padding:12px;border-radius:12px;border:0;width:100%;background:#fff;color:var(--ink)}
+  .log{flex:1;overflow:auto;background:rgba(0,0,0,.18);border-radius:14px;padding:14px;font-size:16px}
+  .log h3{margin:0 0 10px;font-size:15px;color:var(--muted);font-weight:500}
+  .log .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .log .row s{color:var(--muted)}
+  .log .row button{font-size:12px;padding:4px 8px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.2)}
+  .log .tag{color:var(--gold-soft);margin-right:8px;font-weight:600}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ink);padding:10px 18px;border-radius:10px;font-size:15px;display:none}
+  @media (prefers-reduced-motion:reduce){.names.win .name{animation:none}}
+</style>
+</head>
+<body>
+<div id="gate"><form id="gateForm"><input id="pw" type="password" placeholder="관리자 비밀번호" autofocus><button>입장</button><div class="err" id="gateErr"></div></form></div>
+
+<div class="wrap">
+  <header>
+    <img class="ci" src="https://img.wowtv.co.kr/PcStyle/images/ir/ci_img01.png" alt="한국경제TV">
+    <svg class="logo" viewBox="0 0 240 120" role="img" aria-label="20th Anniversary">
+      <text x="121" y="76" text-anchor="middle" font-family="Pretendard,sans-serif" font-weight="800" fill="#fff"><tspan font-size="88" letter-spacing="-4">20</tspan><tspan dx="3" dy="-40" font-size="28" font-weight="700" font-style="italic" fill="#c9a227">th</tspan></text>
+      <line x1="22" y1="99" x2="54" y2="99" stroke="#c9a227" stroke-width="1.5"/>
+      <text x="121.5" y="103.5" text-anchor="middle" font-family="Pretendard,sans-serif" font-size="12" font-weight="600" letter-spacing="3" fill="#e6cf7a">ANNIVERSARY</text>
+      <line x1="186" y1="99" x2="218" y2="99" stroke="#c9a227" stroke-width="1.5"/>
+    </svg>
+  </header>
+
+  <section class="stage">
+    <div class="prize" id="prizeTitle">상품을 선택하세요</div>
+    <div class="names" id="names"><span class="hint">스페이스바 또는 추첨 버튼</span></div>
+    <div class="ctrl">
+      <button id="btnDraw" class="primary" disabled>추첨</button>
+      <button id="btnRedraw" disabled>부재 → 재추첨</button>
+      <button id="btnNext" disabled>다음 상품</button>
+    </div>
+  </section>
+
+  <aside>
+    <div class="pool">추첨 대상 <b id="poolN">0</b>명 <span style="color:var(--muted)">/ 출석 <span id="totalN">0</span>명</span></div>
+    <select id="prizeSel"></select>
+    <div class="log"><h3>당첨 기록</h3><div id="log"></div></div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://pmpifokwmrkqrmumycjx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let PW = sessionStorage.getItem('union20_pw') || '';
+let prizes = [], people = [], winners = [], current = null, lastDraw = [], busy = false;
+
+/* ── 로그인 ── */
+$('gateForm').onsubmit = async e => {
+  e.preventDefault();
+  const pw = $('pw').value;
+  const { data } = await sb.rpc('admin_login', { pw });
+  if (!data) return $('gateErr').textContent = '비밀번호가 틀렸습니다';
+  PW = pw; sessionStorage.setItem('union20_pw', pw); $('gate').remove(); init();
+};
+if (PW) sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } });
+
+/* ── 데이터 ── */
+async function init(){ await Promise.all([loadPrizes(), refresh()]); setInterval(refresh, 4000); }
+async function loadPrizes(){
+  prizes = (await sb.from('prizes').select('*').order('draw_order')).data || [];
+  $('prizeSel').innerHTML = '<option value="">상품 선택</option>' +
+    prizes.map(p => `<option value="${p.id}">${p.rank}등 · ${esc(p.name)} (${p.winner_count}명)</option>`).join('');
+  if (!prizes.length) toast('prizes 테이블에 상품을 먼저 등록하세요');
+}
+async function refresh(){
+  const [a, w] = await Promise.all([
+    sb.from('attendee_public').select('id,name'),
+    sb.from('winners').select('id,attendee_id,prize_id,cancelled,drawn_at').order('drawn_at')
+  ]);
+  people = a.data || []; winners = w.data || [];
+  const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
+  $('totalN').textContent = people.length;
+  $('poolN').textContent = people.filter(p => !won.has(p.id)).length;
+  renderLog();
+}
+const nameOf = id => (people.find(p => p.id === id) || {}).name || '?';
+const prizeOf = id => prizes.find(p => p.id === id) || {};
+function renderLog(){
+  $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
+    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${esc(nameOf(w.attendee_id))}</s>` : esc(nameOf(w.attendee_id))}</span>
+    ${w.cancelled ? '' : `<button data-c="${w.id}">취소</button>`}</div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
+}
+$('log').onclick = async e => {
+  const id = e.target.dataset.c; if (!id) return;
+  if (!confirm(nameOf(winners.find(w => w.id == id).attendee_id) + ' 님 당첨을 취소할까요?')) return;
+  await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +id }); refresh();
+};
+
+/* ── 상품 선택 ── */
+$('prizeSel').onchange = () => {
+  current = prizeOf(+$('prizeSel').value); if (!current.id) current = null;
+  $('prizeTitle').innerHTML = current ? `<b>${current.rank}등</b>${esc(current.name)}` : '상품을 선택하세요';
+  $('names').innerHTML = '<span class="hint">스페이스바 또는 추첨 버튼</span>'; $('names').className = 'names';
+  $('btnDraw').disabled = !current; $('btnRedraw').disabled = true; $('btnNext').disabled = true; lastDraw = [];
+};
+
+/* ── 추첨 ── */
+$('btnDraw').onclick = () => draw(current.winner_count);
+$('btnRedraw').onclick = async () => {
+  if (!lastDraw.length) return;
+  const bad = lastDraw.length === 1 ? lastDraw[0] : lastDraw[+prompt('몇 번째 당첨자가 부재인가요? (1~' + lastDraw.length + ')') - 1];
+  if (!bad) return;
+  await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id });
+  lastDraw = lastDraw.filter(x => x !== bad);
+  draw(1, true);
+};
+$('btnNext').onclick = () => {
+  const i = prizes.findIndex(p => p.id === current.id);
+  if (prizes[i + 1]) { $('prizeSel').value = prizes[i + 1].id; $('prizeSel').onchange(); }
+};
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !$('btnDraw').disabled && !busy) { e.preventDefault(); $('btnDraw').click(); }
+});
+
+async function draw(n, append = false){
+  if (busy || !current) return; busy = true;
+  $('btnDraw').disabled = $('btnRedraw').disabled = $('btnNext').disabled = true;
+  const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
+  const pool = people.filter(p => !won.has(p.id));
+  if (pool.length < n) { toast('추첨 대상이 부족합니다'); busy = false; $('btnDraw').disabled = false; return; }
+
+  // 서버 추첨 먼저(결과 확정) → 그 동안 롤링 연출
+  const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });
+  const box = $('names'); box.className = 'names rolling';
+  const t0 = Date.now(), DUR = 3200;
+  await new Promise(res => {
+    (function roll(){
+      const el = Date.now() - t0;
+      box.innerHTML = Array.from({length: n}, () => `<span class="name">${esc(pool[Math.random() * pool.length | 0].name)}</span>`).join('');
+      el < DUR ? setTimeout(roll, 40 + (el / DUR) ** 2 * 260) : res();
+    })();
+  });
+  const { data, error } = await req;
+  if (error) { toast(error.message); box.className = 'names'; busy = false; $('btnDraw').disabled = false; return; }
+
+  lastDraw = append ? [...lastDraw, ...data] : data;
+  box.className = 'names win';
+  box.innerHTML = lastDraw.map(w => `<span class="name">${esc(w.name)}</span>`).join('');
+  $('btnRedraw').disabled = false; $('btnNext').disabled = false;
+  busy = false; refresh();
+}
+function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 3000); }
+</script>
+</body>
+</html>

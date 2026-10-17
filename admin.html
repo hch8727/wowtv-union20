@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>관리자 · 노조 20주년</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--ink:#14213d;--gold:#c9a227;--gold-deep:#a3821a;--line:#e3e6ec;--muted:#6b7280;--bg:#f5f6f8;--err:#b42318;--ok:#1f7a4d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+  button,input,select{font:inherit}
+  button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;color:var(--ink)}
+  button.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  button.danger{color:var(--err);border-color:#f3c6c1}
+  button:disabled{opacity:.45;cursor:default}
+  input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  #gate{position:fixed;inset:0;background:var(--ink);display:grid;place-items:center;z-index:9}
+  #gate form{width:300px}
+  #gate input{width:100%;font-size:20px;padding:12px;text-align:center;letter-spacing:.3em;border:0}
+  #gate button{width:100%;margin-top:10px;padding:12px;background:var(--gold);border:0;font-weight:700}
+  #gate .err{color:#ff8a80;margin-top:8px;text-align:center;min-height:1.4em}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:16px}
+  header h1{font-size:18px;margin:0;flex:1}
+  nav{display:flex;gap:4px}
+  nav button{border:0;background:transparent;color:var(--muted);padding:8px 12px}
+  nav button.on{color:var(--ink);font-weight:700;background:var(--bg)}
+  main{max-width:1100px;margin:0 auto;padding:24px}
+  .panel{display:none}.panel.on{display:block}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .bar .sp{flex:1}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:#fafbfc;font-weight:600;color:var(--muted);font-size:13px}
+  tr:last-child td{border-bottom:0}
+  td.n{color:var(--muted);width:48px}
+  .tag{display:inline-block;background:#fff7e0;color:var(--gold-deep);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600}
+  .stat{display:flex;gap:28px}.stat b{font-size:28px;display:block}.stat span{color:var(--muted);font-size:13px}
+  .row{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row label{flex:1}
+  .toggle{width:46px;height:26px;border-radius:13px;background:#cfd4dd;position:relative;border:0;padding:0}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+  .toggle.on{background:var(--ok)}.toggle.on::after{left:23px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;display:none}
+  .danger-zone{border-color:#f3c6c1}
+  .danger-zone h3{margin:0 0 8px;color:var(--err);font-size:15px}
+  .danger-zone p{margin:0 0 12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="gate"><form id="gateForm"><input id="pw" type="password" placeholder="관리자 비밀번호" autofocus><button>로그인</button><div class="err" id="gateErr"></div></form></div>
+
+<header>
+  <h1>노조 20주년 · 관리자</h1>
+  <nav>
+    <button data-p="att" class="on">출석 명단</button>
+    <button data-p="prize">상품</button>
+    <button data-p="set">설정</button>
+  </nav>
+  <button id="logout">로그아웃</button>
+</header>
+
+<main>
+  <!-- 출석 명단 -->
+  <section class="panel on" id="p-att">
+    <div class="card stat">
+      <div><b id="sTotal">0</b><span>출석</span></div>
+      <div><b id="sWon">0</b><span>당첨</span></div>
+      <div><b id="sPhone">0</b><span>전화번호 보유</span></div>
+    </div>
+    <div class="bar">
+      <input id="q" placeholder="이름·번호 검색" style="width:220px">
+      <span class="sp"></span>
+      <input id="mName" placeholder="이름" style="width:110px"><input id="mPhone" placeholder="전화번호" style="width:150px">
+      <button id="mAdd">수동 등록</button>
+      <button id="btnXlsx" class="primary">엑셀 다운로드</button>
+    </div>
+    <table><thead><tr><th>#</th><th>이름</th><th>전화번호</th><th>출석 시각</th><th>당첨</th><th></th></tr></thead><tbody id="attBody"></tbody></table>
+  </section>
+
+  <!-- 상품 -->
+  <section class="panel" id="p-prize">
+    <div class="card">
+      <div class="bar" style="margin:0">
+        <input id="pOrder" type="number" placeholder="순서" style="width:70px" title="진행 순서(작을수록 먼저)">
+        <input id="pRank" type="number" placeholder="등수" style="width:70px">
+        <input id="pName" placeholder="상품명" style="flex:1">
+        <input id="pCount" type="number" placeholder="인원" style="width:70px" value="1">
+        <button id="pSave" class="primary">추가</button><button id="pCancel" style="display:none">취소</button>
+      </div>
+    </div>
+    <table><thead><tr><th>순서</th><th>등수</th><th>상품명</th><th>인원</th><th></th></tr></thead><tbody id="prizeBody"></tbody></table>
+    <p style="color:var(--muted);font-size:13px">진행 순서는 작은 번호부터. 1등은 마지막 순서로 두세요.</p>
+  </section>
+
+  <!-- 설정 -->
+  <section class="panel" id="p-set">
+    <div class="card">
+      <div class="row"><label>출석 접수 받기</label><button class="toggle" data-k="checkin_open"></button></div>
+      <div class="row"><label>사진 업로드 받기</label><button class="toggle" data-k="upload_open"></button></div>
+      <div class="row"><label>사진 투표 받기</label><button class="toggle" data-k="vote_open"></button></div>
+      <div class="row"><label>참가자 화면에 좋아요 수 공개</label><button class="toggle" data-k="show_like_count"></button></div>
+    </div>
+    <div class="card">
+      <div class="bar" style="margin:0"><input id="newPw" type="password" placeholder="새 관리자 비밀번호" style="width:220px"><button id="chPw">비밀번호 변경</button></div>
+    </div>
+    <div class="card danger-zone">
+      <h3>전화번호 일괄 삭제</h3>
+      <p>모든 참가자의 전화번호를 지웁니다. 이름·출석·당첨 기록은 남습니다. 되돌릴 수 없습니다.</p>
+      <button id="btnWipe" class="danger">전화번호 삭제…</button>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://pmpifokwmrkqrmumycjx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = t => new Date(t).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const fmtPhone = p => p ? p.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3') : '';
+async function rpc(fn, args){ const { data, error } = await sb.rpc(fn, { pw: PW, ...args }); if (error) { toast(error.message); throw error; } return data; }
+function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 2800); }
+
+let PW = sessionStorage.getItem('union20_pw') || '', att = [], prizes = [], editId = null;
+
+/* 로그인 */
+$('gateForm').onsubmit = async e => {
+  e.preventDefault();
+  const { data } = await sb.rpc('admin_login', { pw: $('pw').value });
+  if (!data) return $('gateErr').textContent = '비밀번호가 틀렸습니다';
+  PW = $('pw').value; sessionStorage.setItem('union20_pw', PW); $('gate').remove(); init();
+};
+if (PW) sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } });
+$('logout').onclick = () => { sessionStorage.removeItem('union20_pw'); location.reload(); };
+
+/* 탭 */
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button, .panel').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); $('p-' + b.dataset.p).classList.add('on');
+});
+
+async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings()]); setInterval(loadAtt, 5000); }
+
+/* 출석 명단 */
+async function loadAtt(){
+  att = await rpc('admin_attendees', {}) || [];
+  $('sTotal').textContent = att.length;
+  $('sWon').textContent = att.filter(a => a.prize_rank).length;
+  $('sPhone').textContent = att.filter(a => a.phone).length;
+  renderAtt();
+}
+function renderAtt(){
+  const q = $('q').value.trim();
+  const rows = att.filter(a => !q || a.name.includes(q) || (a.phone || '').includes(q.replace(/\D/g,'')));
+  $('attBody').innerHTML = rows.map((a, i) => `<tr>
+    <td class="n">${i + 1}</td><td>${esc(a.name)}</td><td>${fmtPhone(a.phone)}</td><td>${fmt(a.checked_in_at)}</td>
+    <td>${a.prize_rank ? `<span class="tag">${a.prize_rank}등 ${esc(a.prize_name)}</span>` : ''}</td>
+    <td><button data-del="${a.id}" style="padding:4px 8px;font-size:12px">삭제</button></td></tr>`).join('')
+    || '<tr><td colspan="6" style="color:var(--muted);text-align:center">출석자가 없습니다</td></tr>';
+}
+$('q').oninput = renderAtt;
+$('attBody').onclick = async e => {
+  const id = e.target.dataset.del; if (!id) return;
+  const a = att.find(x => x.id == id);
+  if (!confirm(`${a.name} 님을 명단에서 삭제할까요? 당첨·사진 기록도 함께 삭제됩니다.`)) return;
+  await rpc('admin_delete_attendee', { p_id: +id }); loadAtt();
+};
+$('mAdd').onclick = async () => {
+  const name = $('mName').value.trim(), phone = $('mPhone').value.replace(/\D/g,'');
+  if (!name || !phone) return toast('이름과 전화번호를 입력하세요');
+  await rpc('admin_add_attendee', { p_name: name, p_phone: phone });
+  $('mName').value = $('mPhone').value = ''; toast('등록했습니다'); loadAtt();
+};
+$('btnXlsx').onclick = () => {
+  const rows = att.map((a, i) => ({ '번호': i + 1, '이름': a.name, '전화번호': fmtPhone(a.phone), '출석시각': fmt(a.checked_in_at),
+    '당첨여부': a.prize_rank ? 'O' : '', '등수': a.prize_rank ?? '', '상품': a.prize_name ?? '' }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:6},{wch:12},{wch:16},{wch:20},{wch:8},{wch:6},{wch:20}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '출석명단');
+  XLSX.writeFile(wb, `노조20주년_출석명단_${new Date().toISOString().slice(0,10)}.xlsx`);
+};
+
+/* 상품 */
+async function loadPrizes(){
+  prizes = (await sb.from('prizes').select('*').order('draw_order')).data || [];
+  $('prizeBody').innerHTML = prizes.map(p => `<tr><td>${p.draw_order}</td><td>${p.rank}등</td><td>${esc(p.name)}</td><td>${p.winner_count}명</td>
+    <td style="text-align:right"><button data-e="${p.id}" style="padding:4px 8px;font-size:12px">수정</button> <button data-d="${p.id}" style="padding:4px 8px;font-size:12px">삭제</button></td></tr>`).join('')
+    || '<tr><td colspan="5" style="color:var(--muted);text-align:center">등록된 상품이 없습니다</td></tr>';
+}
+$('pSave').onclick = async () => {
+  const [o, r, n, c] = [+$('pOrder').value, +$('pRank').value, $('pName').value.trim(), +$('pCount').value];
+  if (!o || !r || !n || !c) return toast('순서·등수·상품명·인원을 모두 입력하세요');
+  await rpc('admin_prize_save', { p_id: editId, p_rank: r, p_name: n, p_count: c, p_order: o });
+  resetPrizeForm(); loadPrizes();
+};
+$('pCancel').onclick = resetPrizeForm;
+function resetPrizeForm(){ editId = null; ['pOrder','pRank','pName'].forEach(i => $(i).value = ''); $('pCount').value = 1; $('pSave').textContent = '추가'; $('pCancel').style.display = 'none'; }
+$('prizeBody').onclick = async e => {
+  const eid = e.target.dataset.e, did = e.target.dataset.d;
+  if (eid) { const p = prizes.find(x => x.id == eid); editId = p.id; $('pOrder').value = p.draw_order; $('pRank').value = p.rank; $('pName').value = p.name; $('pCount').value = p.winner_count; $('pSave').textContent = '저장'; $('pCancel').style.display = ''; }
+  if (did && confirm('이 상품을 삭제할까요?')) { await rpc('admin_prize_delete', { p_id: +did }); loadPrizes(); }
+};
+
+/* 설정 */
+async function loadSettings(){
+  const { data } = await sb.from('settings').select('key,value');
+  (data || []).forEach(s => { const b = document.querySelector(`.toggle[data-k="${s.key}"]`); if (b) b.classList.toggle('on', s.value === 'true'); });
+}
+document.querySelectorAll('.toggle').forEach(b => b.onclick = async () => {
+  const v = b.classList.contains('on') ? 'false' : 'true';
+  await rpc('admin_set', { k: b.dataset.k, v }); b.classList.toggle('on', v === 'true');
+});
+$('chPw').onclick = async () => {
+  const v = $('newPw').value; if (v.length < 4) return toast('4자 이상 입력하세요');
+  await rpc('admin_set', { k: 'admin_pw_hash', v }); PW = v; sessionStorage.setItem('union20_pw', v); $('newPw').value = ''; toast('비밀번호를 변경했습니다');
+};
+$('btnWipe').onclick = async () => {
+  const pw = prompt('전화번호를 모두 삭제합니다.\n확인을 위해 관리자 비밀번호를 다시 입력하세요.');
+  if (pw == null) return;
+  if (pw !== PW) return toast('비밀번호가 일치하지 않습니다');
+  if (!confirm('정말 삭제할까요? 되돌릴 수 없습니다.')) return;
+  const n = await rpc('admin_clear_phones', {}); toast(`${n}명의 전화번호를 삭제했습니다`); loadAtt();
+};
+</script>
+</body>
+</html>
