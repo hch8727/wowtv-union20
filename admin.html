@@ -44,13 +44,6 @@
   .toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
   .toggle.on{background:var(--ok)}.toggle.on::after{left:23px}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;display:none}
-  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-  .pc{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .pc img{width:100%;aspect-ratio:1;object-fit:cover;display:block;cursor:zoom-in}
-  .pc.hid img{opacity:.3}
-  .pc .b{padding:8px 10px;font-size:13px}
-  .pc .b .m{color:var(--muted);display:flex;justify-content:space-between;margin-top:4px}
-  .pc .b button{width:100%;margin-top:8px;padding:6px;font-size:12px}
   .danger-zone{border-color:#f3c6c1}
   .danger-zone h3{margin:0 0 8px;color:var(--err);font-size:15px}
   .danger-zone p{margin:0 0 12px;color:var(--muted)}
@@ -61,11 +54,10 @@
 
 <header>
   <img src="https://img.wowtv.co.kr/PcStyle/images/ir/logo.png" alt="한국경제TV" style="width:auto;height:auto;max-width:100%">
-  <h1>관리자</h1>
+  <h1>관리자 | 한국경제TV노조출석부</h1>
   <nav>
     <button data-p="att" class="on">출석 명단</button>
     <button data-p="prize">상품</button>
-    <button data-p="photo">사진</button>
     <button data-p="set">설정</button>
   </nav>
   <button id="logout">로그아웃</button>
@@ -104,23 +96,10 @@
     <p style="color:var(--muted);font-size:13px">진행 순서는 작은 번호부터. 1등은 마지막 순서로 두세요.</p>
   </section>
 
-  <!-- 사진 -->
-  <section class="panel" id="p-photo">
-    <div class="card stat">
-      <div><b id="phN">0</b><span>사진</span></div>
-      <div><b id="phL">0</b><span>좋아요</span></div>
-      <div><b id="phH">0</b><span>숨김</span></div>
-    </div>
-    <div class="pgrid" id="phGrid"></div>
-  </section>
-
   <!-- 설정 -->
   <section class="panel" id="p-set">
     <div class="card">
       <div class="row"><label>출석 접수 받기</label><button class="toggle" data-k="checkin_open"></button></div>
-      <div class="row"><label>사진 업로드 받기</label><button class="toggle" data-k="upload_open"></button></div>
-      <div class="row"><label>사진 투표 받기</label><button class="toggle" data-k="vote_open"></button></div>
-      <div class="row"><label>참가자 화면에 좋아요 수 공개</label><button class="toggle" data-k="show_like_count"></button></div>
     </div>
     <div class="card">
       <div class="bar" style="margin:0"><input id="newPw" type="password" placeholder="새 관리자 비밀번호" style="width:220px"><button id="chPw">비밀번호 변경</button></div>
@@ -132,7 +111,7 @@
     </div>
     <div class="card danger-zone">
       <h3>출석부 전체 초기화</h3>
-      <p>출석자·당첨 기록·사진·좋아요를 모두 삭제합니다. 상품 목록과 설정은 유지됩니다. Storage의 사진 파일은 Supabase 대시보드에서 따로 비우세요.</p>
+      <p>출석자와 당첨 기록을 모두 삭제합니다. 상품 목록과 설정은 유지됩니다. 테스트 후 행사 전에 한 번 실행하세요.</p>
       <button id="btnReset" class="danger">전체 초기화…</button>
     </div>
   </section>
@@ -170,7 +149,7 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
   b.classList.add('on'); $('p-' + b.dataset.p).classList.add('on');
 });
 
-async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings(), loadPhotos()]); setInterval(loadAtt, 5000); setInterval(loadPhotos, 8000); }
+async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings()]); setInterval(loadAtt, 5000); }
 
 /* 출석 명단 */
 async function loadAtt(){
@@ -193,7 +172,7 @@ $('q').oninput = renderAtt;
 $('attBody').onclick = async e => {
   const id = e.target.dataset.del; if (!id) return;
   const a = att.find(x => x.id == id);
-  if (!confirm(`${a.name} 님을 명단에서 삭제할까요? 당첨·사진 기록도 함께 삭제됩니다.`)) return;
+  if (!confirm(`${a.name} 님을 명단에서 삭제할까요? 당첨 기록도 함께 삭제됩니다.`)) return;
   await rpc('admin_delete_attendee', { p_id: +id }); loadAtt();
 };
 $('mAdd').onclick = async () => {
@@ -232,24 +211,6 @@ $('prizeBody').onclick = async e => {
   if (did && confirm('이 상품을 삭제할까요?')) { await rpc('admin_prize_delete', { p_id: +did }); loadPrizes(); }
 };
 
-/* 사진 */
-const purl = p => /^https?:/.test(p) ? p : sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
-let photosA = [];
-async function loadPhotos(){
-  photosA = await rpc('admin_photos', {}) || [];
-  $('phN').textContent = photosA.length; $('phL').textContent = photosA.reduce((s, p) => s + p.likes, 0); $('phH').textContent = photosA.filter(p => p.hidden).length;
-  $('phGrid').innerHTML = photosA.map(p => `<div class="pc ${p.hidden ? 'hid' : ''}">
-    <a href="${purl(p.path)}" target="_blank"><img src="${purl(p.path)}" loading="lazy"></a>
-    <div class="b"><div>${esc(p.caption || '<span style="color:var(--muted)">설명 없음</span>')}</div>
-      <div class="m"><span>${esc(p.author)} · ${p.last4 || ''}</span><span>♥ ${p.likes}</span></div>
-      <button data-h="${p.id}" data-v="${!p.hidden}" class="${p.hidden ? 'primary' : 'danger'}">${p.hidden ? '다시 표시' : '숨기기'}</button></div></div>`).join('')
-    || '<p style="color:var(--muted)">올라온 사진이 없습니다</p>';
-}
-$('phGrid').onclick = async e => {
-  const id = e.target.dataset.h; if (!id) return;
-  await rpc('admin_hide_photo', { p_photo: +id, p_hidden: e.target.dataset.v === 'true' }); loadPhotos();
-};
-
 /* 설정 */
 async function loadSettings(){
   const { data } = await sb.from('settings').select('key,value');
@@ -268,7 +229,7 @@ $('btnReset').onclick = async () => {
   if (pw == null) return;
   if (pw !== PW) return toast('비밀번호가 일치하지 않습니다');
   if (prompt('되돌릴 수 없습니다. 계속하려면 "초기화"를 입력하세요.') !== '초기화') return;
-  const r = await rpc('admin_reset_all', {}); toast(`출석 ${r.attendees}명, 사진 ${r.photos}장을 삭제했습니다`); loadAtt(); loadPhotos();
+  const r = await rpc('admin_reset_all', {}); toast(`출석 ${r.attendees}명을 삭제했습니다`); loadAtt();
 };
 $('btnWipe').onclick = async () => {
   const pw = prompt('전화번호를 모두 삭제합니다.\n확인을 위해 관리자 비밀번호를 다시 입력하세요.');

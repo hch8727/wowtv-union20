@@ -78,7 +78,7 @@
 </style>
 </head>
 <body>
-<nav class="snav"><a href="monitor.html" class="">출석 현황</a><a href="draw.html" class="cur">경품 추첨</a><a href="gallery.html" class="">사진 이벤트</a></nav>
+<nav class="snav"><a href="monitor.html" class="">출석 현황</a><a href="draw.html" class="cur">경품 추첨</a></nav>
 <div id="gate"><form id="gateForm"><input id="pw" type="password" placeholder="관리자 비밀번호" autofocus><button>입장</button><div class="err" id="gateErr"></div></form></div>
 
 <div class="wrap">
@@ -295,12 +295,12 @@ const Snd = (() => {
 $('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
 
 function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 3000); }
-/* 화면 전환: 마우스 움직이면 탭 표시, 숫자키 1·2·3 */
+/* 화면 전환: 마우스 움직이면 탭 표시, 숫자키 1·2 */
 (() => {
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'gallery.html' }[e.key]; if (m) location.href = m; });
+    const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m; });
 })();
 </script>
 </body>
