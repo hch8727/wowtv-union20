@@ -274,7 +274,7 @@ const Snd = (() => {
     crash(first){ if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => tone(f, 1.2, .18), i * 90)); }
   };
 })();
-$('snd').onclick = () => { $('snd').textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; };
+$('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
 
 function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 3000); }
 </script>
