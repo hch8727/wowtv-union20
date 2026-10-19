@@ -27,15 +27,20 @@
   .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
   .names{margin:26px 0 34px;min-height:220px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
   .hint{color:var(--muted);font-size:20px}
+  .prize .cnt{display:inline-block;margin-left:14px;font-size:20px;color:#fff;background:rgba(255,255,255,.14);padding:4px 14px;border-radius:999px;font-variant-numeric:tabular-nums}
+  .prev{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:-10px 0 18px;min-height:40px}
+  .prev span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 16px;font-size:22px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+  .prev span.cx{text-decoration:line-through;opacity:.4}
   /* 슬롯 릴: 자리별 4개 컬럼 */
-  .reel{--h:150px;display:flex;gap:8px;padding:12px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;transition:background .3s,box-shadow .3s}
-  .dcol{height:var(--h);width:84px;overflow:hidden;border-radius:14px;background:#fff;color:var(--ink);position:relative;
+  .reel{--h:250px;display:flex;gap:8px;padding:12px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;transition:background .3s,box-shadow .3s}
+  .dcol{height:var(--h);width:150px;overflow:hidden;border-radius:14px;background:#fff;color:var(--ink);position:relative;
         box-shadow:inset 0 14px 22px rgba(0,0,0,.16),inset 0 -14px 22px rgba(0,0,0,.16)}
   .dcol::before,.dcol::after{content:"";position:absolute;left:0;right:0;height:34px;pointer-events:none;z-index:2}
+  .dcol::before,.dcol::after{height:56px}
   .dcol::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}
   .dcol::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
   .dcol .strip{will-change:transform}
-  .dcol .cell{height:var(--h);display:grid;place-items:center;font-size:96px;font-weight:800;font-variant-numeric:tabular-nums}
+  .dcol .cell{height:var(--h);display:grid;place-items:center;font-size:176px;font-weight:800;font-variant-numeric:tabular-nums}
   .dcol.stop{animation:thud .3s cubic-bezier(.2,.9,.3,1.6)}
   .dcol.set{background:var(--gold);color:#fff;box-shadow:0 0 30px rgba(30,194,242,.7)}
   .dcol.set::before{background:linear-gradient(var(--gold),rgba(30,194,242,0))}
@@ -46,6 +51,22 @@
   .reel.first .dcol.set::after{background:linear-gradient(rgba(244,200,74,0),#f4c84a)}
   .reel.first{background:rgba(244,200,74,.15);border-color:#f4c84a;box-shadow:0 0 0 4px rgba(255,255,255,.25),0 0 90px rgba(244,200,74,.8)}
   @keyframes thud{40%{transform:translateY(8px) scale(1.04)}}
+  /* 마지막 자리 연출 */
+  #dim{position:fixed;inset:0;background:radial-gradient(circle at 50% 46%,transparent 240px,rgba(0,10,25,.88) 620px);opacity:0;pointer-events:none;z-index:4;transition:opacity .6s}
+  #dim.on{opacity:1}
+  .dcol.tense{animation:tense .5s ease-in-out infinite alternate}
+  @keyframes tense{from{box-shadow:inset 0 14px 22px rgba(0,0,0,.16),inset 0 -14px 22px rgba(0,0,0,.16),0 0 0 0 rgba(255,255,255,.4)}to{box-shadow:inset 0 14px 22px rgba(0,0,0,.16),inset 0 -14px 22px rgba(0,0,0,.16),0 0 0 14px rgba(255,255,255,0)}}
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:7}
+  #flash.on{animation:flash .7s ease-out}
+  @keyframes flash{0%{opacity:1}100%{opacity:0}}
+  .stage.shake{animation:shake .5s}
+  @keyframes shake{10%,90%{transform:translate(-2px,0)}20%,80%{transform:translate(4px,0)}30%,50%,70%{transform:translate(-8px,0)}40%,60%{transform:translate(8px,0)}}
+  .reel{position:relative;z-index:5}
+  #win{position:fixed;left:50%;top:7%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:84px;font-weight:900;color:#fff;letter-spacing:-.02em;
+       text-shadow:0 0 30px rgba(30,194,242,.9),0 6px 0 rgba(0,0,0,.25);pointer-events:none}
+  #win.on{animation:winpop .9s cubic-bezier(.2,1.2,.3,1) forwards}
+  @keyframes winpop{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}60%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(2deg)}100%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}}
+  #win.first{color:#f4c84a;text-shadow:0 0 40px rgba(244,200,74,.9),0 6px 0 rgba(0,0,0,.3)}
   /* 카운트다운 */
   #cd{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,30,55,.6);z-index:5;font-size:min(40vw,420px);font-weight:900;color:#fff}
   #cd.on{display:grid}
@@ -108,6 +129,9 @@
 </div>
 <div class="toast" id="toast"></div>
 <div id="cd"></div>
+<div id="dim"></div>
+<div id="flash"></div>
+<div id="win"></div>
 <button class="snd" id="snd">🔊 사운드 켜짐</button>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -137,7 +161,7 @@ async function init(){ await Promise.all([loadPrizes(), refresh()]); setInterval
 async function loadPrizes(){
   prizes = (await sb.from('prizes').select('*').order('draw_order')).data || [];
   $('prizeSel').innerHTML = '<option value="">상품 선택</option>' +
-    prizes.map(p => `<option value="${p.id}">${p.rank}등 · ${esc(p.name)} (${p.winner_count}명)</option>`).join('');
+    prizes.map(p => `<option value="${p.id}">${p.rank}등 · ${esc(p.name)}</option>`).join('');
   if (!prizes.length) toast('prizes 테이블에 상품을 먼저 등록하세요');
 }
 async function refresh(){
@@ -149,10 +173,19 @@ async function refresh(){
   const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
   $('totalN').textContent = people.length;
   $('poolN').textContent = people.filter(p => !won.has(p.id)).length;
-  renderLog();
+  renderLog(); renderPrize();
 }
 const l4Of = id => (people.find(p => p.id === id) || {}).last4 || '????';
 const prizeOf = id => prizes.find(p => p.id === id) || {};
+function renderPrize(){
+  if (!current) return;
+  const mine = winners.filter(w => w.prize_id === current.id);
+  const done = mine.filter(w => !w.cancelled).length, total = current.winner_count;
+  $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${esc(current.name)}<span class="cnt">${done} / ${total}명</span>`;
+  $('prev').innerHTML = mine.map(w => `<span class="${w.cancelled ? 'cx' : ''}">${l4Of(w.attendee_id)}</span>`).join('');
+  const full = done >= total;
+  $('btnDraw').disabled = busy || full; $('btnDraw').textContent = full ? '추첨 완료' : (done ? `${done + 1}번째 추첨` : '추첨');
+}
 function renderLog(){
   $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
     <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)}</s>` : l4Of(w.attendee_id)}</span>
@@ -173,7 +206,7 @@ $('prizeSel').onchange = () => {
 };
 
 /* ── 추첨 ── */
-$('btnDraw').onclick = () => draw(current.winner_count);
+$('btnDraw').onclick = () => draw(1);
 async function redraw(bad){
   if (!bad || busy) return;
   if (!confirm(`뒷자리 ${bad.last4} 당첨을 부재 처리하고 1명을 다시 뽑을까요?`)) return;
@@ -202,7 +235,7 @@ document.addEventListener('keydown', e => {
 async function draw(n, append = false){
   try { await drawInner(n, append); }
   catch (e) { toast('오류: ' + (e.message || e)); console.error(e); }
-  finally { Snd.drumroll(false); $('cd').classList.remove('on'); busy = false; $('btnDraw').disabled = !current; }
+  finally { Snd.drumroll(false); Snd.heartbeat(false); $('dim').classList.remove('on'); $('cd').classList.remove('on'); busy = false; renderPrize(); }
 }
 async function drawInner(n, append){
   if (busy || !current) return; busy = true;
@@ -222,6 +255,7 @@ async function drawInner(n, append){
   if (error) { box.className = 'names'; box.innerHTML = ''; throw new Error(error.message); }
 
   const isFirst = current.rank === 1;
+  $('win').className = ''; 
   const gap = reels.length > 1 ? 4200 : 0;           // 여러 명이면 릴 하나(4자리) 끝난 뒤 다음 릴
   const stops = reels.map((r, i) => r.stopAt(data[i].last4, 1800 + i * gap));
   for (let i = 0; i < stops.length; i++) {
@@ -229,6 +263,9 @@ async function drawInner(n, append){
     reels[i].el.classList.add(isFirst ? 'first' : 'win');
   }
   Snd.drumroll(false); Snd.crash(isFirst);
+  const fl = $('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
+  const st = document.querySelector('.stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake');
+  const w = $('win'); w.textContent = isFirst ? '🏆 1등 당첨!' : '🎉 당첨!'; w.className = 'on' + (isFirst ? ' first' : '');
   celebrate(isFirst);
   lastDraw = append ? [...lastDraw, ...data] : data;
   box.className = 'names win';
@@ -239,7 +276,7 @@ async function drawInner(n, append){
 /* ── 슬롯 릴: 4자리를 왼쪽부터 한 자리씩 정지 ── */
 function makeReel(){
   const el = document.createElement('div'); el.className = 'reel';
-  const H = 150, N = 30, DIGIT_GAP = 750;
+  const H = 250, N = 30, DIGIT_GAP = 750;
   const cols = Array.from({length: 4}, () => {
     const col = document.createElement('div'); col.className = 'dcol';
     const strip = document.createElement('div'); strip.className = 'strip'; col.appendChild(strip); el.appendChild(col);
@@ -260,10 +297,16 @@ function makeReel(){
     await new Promise(r => setTimeout(r, delay));
     const digits = String(val || '????').padStart(4, '?').slice(-4).split('');
     for (let k = 0; k < 4; k++) {
+      if (k === 3) {                                          // 마지막 자리: 암전 + 두근두근 + 길게 끌기
+        $('dim').classList.add('on'); cols[3].col.classList.add('tense'); Snd.heartbeat(true);
+        await new Promise(r => setTimeout(r, 2600));
+        Snd.heartbeat(false); cols[3].col.classList.remove('tense');
+      }
       await cols[k].stop(digits[k]);
       cols[k].col.classList.add('stop', 'set'); Snd.click();
       if (k < 3) { Snd.riser(); await new Promise(r => setTimeout(r, DIGIT_GAP)); }
     }
+    $('dim').classList.remove('on');
   } };
 }
 
@@ -287,7 +330,7 @@ function celebrate(first){
 
 /* ── 사운드 (Web Audio 합성, 파일 불필요) ── */
 const Snd = (() => {
-  let ctx, on = true, roll;
+  let ctx, on = true, roll, this_hb;
   const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
   const noise = (dur, gain, lp) => { const c = ac(), b = c.createBuffer(1, c.sampleRate * dur, c.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
@@ -297,12 +340,14 @@ const Snd = (() => {
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
-    toggle(){ on = !on; if (!on) this.drumroll(false); return on; },
+    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); } return on; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
     drumroll: safe(start => { clearInterval(roll); if (!start || !on) return; let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
     click: safe(() => { if (on) noise(.05, .5, 2500); }),
     riser: safe(() => { if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
       g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); }),
+    heartbeat: safe(start => { clearInterval(this_hb); if (!start || !on) return; let i = 0;
+      this_hb = setInterval(() => { tone(55, .18, .5, 'sine'); setTimeout(() => tone(50, .14, .35, 'sine'), 180); i++; }, Math.max(380, 760 - i * 0)); }),
     crash: safe(first => { if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => { try { tone(f, 1.2, .18); } catch (e) {} }, i * 90)); })
   };
 })();
