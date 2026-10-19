@@ -68,9 +68,17 @@
   .log .tag{color:var(--gold-soft);margin-right:8px;font-weight:600}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ink);padding:10px 18px;border-radius:10px;font-size:15px;display:none}
   @media (prefers-reduced-motion:reduce){.names.win .name{animation:none}}
+  /* 화면 전환 탭 (빔 운영용) */
+  .snav{position:fixed;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:rgba(0,0,0,.35);backdrop-filter:blur(8px);
+        padding:5px;border-radius:999px;z-index:50;opacity:0;transition:opacity .3s;pointer-events:none}
+  body.navon .snav{opacity:1;pointer-events:auto}
+  .snav a{color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:8px 16px;border-radius:999px;opacity:.75}
+  .snav a:hover{opacity:1;background:rgba(255,255,255,.12)}
+  .snav a.cur{opacity:1;background:var(--gold);color:#fff}
 </style>
 </head>
 <body>
+<nav class="snav"><a href="monitor.html" class="">출석 현황</a><a href="draw.html" class="cur">경품 추첨</a><a href="gallery.html" class="">사진 이벤트</a></nav>
 <div id="gate"><form id="gateForm"><input id="pw" type="password" placeholder="관리자 비밀번호" autofocus><button>입장</button><div class="err" id="gateErr"></div></form></div>
 
 <div class="wrap">
@@ -287,6 +295,13 @@ const Snd = (() => {
 $('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
 
 function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 3000); }
+/* 화면 전환: 마우스 움직이면 탭 표시, 숫자키 1·2·3 */
+(() => {
+  let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
+  addEventListener('mousemove', show);
+  addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
+    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'gallery.html' }[e.key]; if (m) location.href = m; });
+})();
 </script>
 </body>
 </html>

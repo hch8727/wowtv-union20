@@ -61,7 +61,7 @@
 
 <header>
   <img src="https://img.wowtv.co.kr/PcStyle/images/ir/logo.png" alt="한국경제TV" style="width:auto;height:auto;max-width:100%">
-  <h1>관리자</h1>
+  <h1>관리자 | 한국경제TV노조출석부</h1>
   <nav>
     <button data-p="att" class="on">출석 명단</button>
     <button data-p="prize">상품</button>
@@ -129,6 +129,11 @@
       <h3>전화번호 일괄 삭제</h3>
       <p>모든 참가자의 전화번호를 지웁니다. 이름·출석·당첨 기록은 남습니다. 되돌릴 수 없습니다.</p>
       <button id="btnWipe" class="danger">전화번호 삭제…</button>
+    </div>
+    <div class="card danger-zone">
+      <h3>출석부 전체 초기화</h3>
+      <p>출석자·당첨 기록·사진·좋아요를 모두 삭제합니다. 상품 목록과 설정은 유지됩니다. 테스트 후 행사 전에 한 번 실행하세요.</p>
+      <button id="btnReset" class="danger">전체 초기화…</button>
     </div>
   </section>
 </main>
@@ -257,6 +262,13 @@ document.querySelectorAll('.toggle').forEach(b => b.onclick = async () => {
 $('chPw').onclick = async () => {
   const v = $('newPw').value; if (v.length < 4) return toast('4자 이상 입력하세요');
   await rpc('admin_set', { k: 'admin_pw_hash', v }); PW = v; sessionStorage.setItem('union20_pw', v); $('newPw').value = ''; toast('비밀번호를 변경했습니다');
+};
+$('btnReset').onclick = async () => {
+  const pw = prompt('출석부를 전체 초기화합니다.\n확인을 위해 관리자 비밀번호를 다시 입력하세요.');
+  if (pw == null) return;
+  if (pw !== PW) return toast('비밀번호가 일치하지 않습니다');
+  if (prompt('되돌릴 수 없습니다. 계속하려면 "초기화"를 입력하세요.') !== '초기화') return;
+  const r = await rpc('admin_reset_all', {}); toast(`출석 ${r.attendees}명, 사진 ${r.photos}장을 삭제했습니다`); loadAtt(); loadPhotos();
 };
 $('btnWipe').onclick = async () => {
   const pw = prompt('전화번호를 모두 삭제합니다.\n확인을 위해 관리자 비밀번호를 다시 입력하세요.');
