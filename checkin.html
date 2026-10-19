@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{
-    --ink:#14213d; --paper:#ffffff; --gold:#c9a227; --gold-deep:#a3821a;
-    --line:#d7dbe3; --muted:#6b7280; --ok:#1f7a4d; --err:#b42318;
+    --ink:#00538E; --paper:#ffffff; --accent:#1EC2F2; --accent-deep:#0E8FBE;
+    --line:#d6e3ee; --muted:#5f7387; --ok:#1f7a4d; --err:#b42318;
     box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
   }
   *,*::before,*::after{box-sizing:inherit}
@@ -16,22 +16,22 @@
   body{font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--paper);color:var(--ink);
        -webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
   header{padding:36px 24px 8px;text-align:center}
-  .ci{display:block;height:40px;margin:0 auto 20px}
-  header p{margin:18px 0 0;font-size:17px;line-height:1.5}
-  header small{display:block;color:var(--muted);font-size:14px;margin-top:4px}
+  .brand{display:block;height:44px;margin:0 auto 22px}
+  header p{margin:0;font-size:22px;font-weight:700;line-height:1.4;letter-spacing:-.01em}
+  header small{display:inline-block;color:var(--accent-deep);font-size:13px;font-weight:600;margin-top:10px;padding:4px 12px;border:1px solid var(--accent);border-radius:999px}
   main{flex:1;padding:24px;max-width:420px;width:100%;margin:0 auto}
   label{display:block;font-size:14px;color:var(--muted);margin:18px 0 6px}
   input{width:100%;font:inherit;font-size:20px;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);outline:none}
-  input:focus{border-color:var(--ink)}
+  input:focus{border-color:var(--accent-deep)}
   button{width:100%;font:inherit;font-size:18px;font-weight:700;padding:17px;margin-top:28px;border:0;border-radius:14px;background:var(--ink);color:#fff;cursor:pointer}
   button:disabled{opacity:.5}
-  button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   .notice{font-size:13px;color:var(--muted);line-height:1.6;margin-top:16px}
   .msg{margin-top:14px;font-size:15px;min-height:1.5em}
   .msg.err{color:var(--err)}
   /* 완료 화면 */
   .done{display:none;text-align:center;padding-top:8px}
-  .done .check{width:88px;height:88px;border-radius:50%;background:var(--ok);margin:8px auto 20px;display:grid;place-items:center}
+  .done .check{width:88px;height:88px;border-radius:50%;background:var(--accent);margin:8px auto 20px;display:grid;place-items:center}
   .done .check svg{width:44px;height:44px}
   .done h2{font-size:26px;margin:0 0 6px}
   .done p{color:var(--muted);margin:0;line-height:1.6}
@@ -44,7 +44,7 @@
 </head>
 <body>
 <header>
-  <img class="ci" src="https://img.wowtv.co.kr/PcStyle/images/ir/ci_img01.png" alt="한국경제TV">
+  <img class="brand" src="https://img.wowtv.co.kr/PcStyle/images/ir/logo.png" alt="한국경제TV">
   <p>한국경제TV 노동조합 창립 20주년</p>
   <small>출석 확인</small>
 </header>
@@ -61,7 +61,7 @@
   </form>
 
   <section id="done" class="done">
-    <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
+    <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#00538E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
     <h2 id="doneName"></h2>
     <p>출석이 확인되었습니다.<br>행사 끝까지 함께해 주세요.</p>
     <div class="time" id="doneTime"></div>

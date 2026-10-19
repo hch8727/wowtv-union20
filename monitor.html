@@ -6,15 +6,14 @@
 <title>출석 현황</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-  :root{--ink:#14213d;--ink-deep:#0d1830;--gold:#c9a227;--gold-soft:#e6cf7a;--muted:#8a94ad;--paper:#fff}
+  :root{--ink:#00538E;--ink-deep:#003660;--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9;--paper:#fff}
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
   body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
-       background-image:radial-gradient(ellipse at 50% 120%,#1f3161 0%,var(--ink) 55%)}
+       background-image:radial-gradient(ellipse at 50% 120%,#0a6fb4 0%,var(--ink) 50%,var(--ink-deep) 100%)}
   .wrap{height:100%;display:grid;grid-template-columns:1fr 360px;grid-template-rows:auto 1fr;gap:0 48px;padding:40px 56px}
   header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
-  .ci{height:44px;filter:brightness(0) invert(1)}
-  .logo{width:200px}
+  .brand{height:44px;background:#fff;padding:8px 16px;border-radius:12px;box-sizing:content-box}
   .stage{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
   .label{font-size:28px;color:var(--gold-soft);font-weight:500;letter-spacing:.02em}
   .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:8px 0 0}
@@ -23,7 +22,7 @@
   .unit{font-size:36px;font-weight:600;color:var(--muted);margin-left:12px;letter-spacing:0}
   .recent{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:900px;min-height:52px}
   .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:10px 20px;font-size:22px;animation:slide .4s ease-out}
-  .chip:first-child{background:var(--gold);color:var(--ink-deep);border-color:var(--gold);font-weight:700}
+  .chip:first-child{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:700}
   @keyframes slide{from{opacity:0;transform:translateY(10px)}}
   aside{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px}
   .qr{background:#fff;padding:18px;border-radius:20px;width:300px;height:300px;display:grid;place-items:center}
@@ -38,14 +37,7 @@
 <body>
 <div class="wrap">
   <header>
-    <img class="ci" src="https://img.wowtv.co.kr/PcStyle/images/ir/ci_img01.png" alt="한국경제TV">
-    <svg class="logo" viewBox="0 0 240 120" role="img" aria-label="20th Anniversary">
-      <text x="121" y="76" text-anchor="middle" font-family="Pretendard,sans-serif" font-weight="800" fill="#fff"
-        ><tspan font-size="88" letter-spacing="-4">20</tspan><tspan dx="3" dy="-40" font-size="28" font-weight="700" font-style="italic" fill="#c9a227">th</tspan></text>
-      <line x1="22" y1="99" x2="54" y2="99" stroke="#c9a227" stroke-width="1.5"/>
-      <text x="121.5" y="103.5" text-anchor="middle" font-family="Pretendard,sans-serif" font-size="12" font-weight="600" letter-spacing="3" fill="#e6cf7a">ANNIVERSARY</text>
-      <line x1="186" y1="99" x2="218" y2="99" stroke="#c9a227" stroke-width="1.5"/>
-    </svg>
+    <img class="brand" src="https://img.wowtv.co.kr/PcStyle/images/ir/logo.png" alt="한국경제TV">
   </header>
 
   <section class="stage">
