@@ -19,7 +19,7 @@
   .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:8px 0 0;vertical-align:bottom}
   .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4)}
   @keyframes bump{30%{transform:scale(1.06);color:var(--gold-soft)}}
-  .unit{font-size:36px;font-weight:600;color:var(--muted);margin-left:12px;letter-spacing:0}
+  .unit{font-size:40px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:.35em}
   .recent{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:900px;min-height:52px}
   .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:10px 22px;font-size:24px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums;animation:slide .4s ease-out}
   .chip:first-child{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:800}
@@ -31,10 +31,11 @@
   @keyframes popin{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,40%) scale(.3)}}
   #pop small{display:block;font-size:28px;font-weight:600;letter-spacing:.1em;color:var(--gold-soft);text-shadow:none;margin-top:-10px}
   /* 7. 숫자 롤업 */
-  .count{display:inline-flex;overflow:hidden;height:1em}
-  .digit{display:inline-block;width:.62em;height:1em;position:relative}
+  .count{display:inline-flex;overflow:hidden;height:1.2em;line-height:1.2}
+  .digit{display:inline-block;width:.62em;height:1.2em;position:relative}
   .digit .col{position:absolute;left:0;top:0;width:100%;transition:transform .9s cubic-bezier(.2,.8,.2,1)}
-  .digit .col span{display:block;height:1em;line-height:1;text-align:center}
+  .digit .col span{display:block;height:1.2em;line-height:1.2;text-align:center}
+  .countRow{display:flex;align-items:baseline;justify-content:center;gap:14px}
   /* 8. 파티클 */
   #bg{position:fixed;inset:0;z-index:0;pointer-events:none}
   .wrap{position:relative;z-index:1}
@@ -58,7 +59,7 @@
 
   <section class="stage">
     <div class="label">지금까지 출석하신 분</div>
-    <div><span class="count" id="count">0</span><span class="unit">명</span></div>
+    <div class="countRow"><span class="count" id="count">0</span><span class="unit">명</span></div>
     <div class="recent" id="recent"></div>
   </section>
 
@@ -113,7 +114,7 @@ function setCount(n){
   if (cur.length !== str.length) {
     $count.innerHTML = [...str].map(() => `<span class="digit"><span class="col">${Array.from({length:10},(_, i) => `<span>${i}</span>`).join('')}</span></span>`).join('');
   }
-  [...str].forEach((d, i) => { const col = $count.querySelectorAll('.digit .col')[i]; col.style.transform = `translateY(-${d}em)`; });
+  [...str].forEach((d, i) => { const col = $count.querySelectorAll('.digit .col')[i]; col.style.transform = `translateY(-${d * 1.2}em)`; });
 }
 /* 6. 출석 순간 연출 */
 function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l4 || '????'}<small>출석 완료</small>`; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
