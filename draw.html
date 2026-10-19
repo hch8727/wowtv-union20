@@ -98,7 +98,7 @@
 <canvas id="fx"></canvas>
 <button class="snd" id="snd">🔊 사운드 켜짐</button>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://pmpifokwmrkqrmumycjx.supabase.co';
@@ -245,8 +245,10 @@ function countdown(){ return new Promise(async res => {
 }); }
 
 /* ── 컨페티 ── */
-const fxConfetti = confetti.create($('fx'), { resize: true, useWorker: true });
+let fxConfetti = null;
+try { if (window.confetti) fxConfetti = confetti.create($('fx'), { resize: true, useWorker: true }); } catch (e) { console.warn('confetti 사용 불가', e); }
 function celebrate(first){
+  if (!fxConfetti) return;
   const colors = first ? ['#f4c84a','#ffffff','#ffe08a','#1EC2F2'] : ['#1EC2F2','#ffffff','#8FE3FF','#00538E'];
   const shoot = (x, angle, n) => fxConfetti({ particleCount: n, angle, spread: 65, origin: { x, y: .7 }, colors, startVelocity: 55, scalar: 1.2, ticks: 260 });
   shoot(0, 60, first ? 160 : 90); shoot(1, 120, first ? 160 : 90);
@@ -264,14 +266,15 @@ const Snd = (() => {
     src.connect(f).connect(g).connect(c.destination); src.start(); };
   const tone = (freq, dur, gain, type = 'sine') => { const c = ac(), o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = freq;
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
+  const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
     toggle(){ on = !on; if (!on) this.drumroll(false); return on; },
-    beep(last){ if (on) tone(last ? 880 : 660, .18, .25, 'square'); },
-    drumroll(start){ clearInterval(roll); if (!start || !on) return; let i = 0; roll = setInterval(() => { noise(.06, .35, 900 + (i++ % 2) * 300); }, 55); },
-    click(){ if (on) noise(.05, .5, 2500); },
-    riser(){ if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
-      g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); },
-    crash(first){ if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => tone(f, 1.2, .18), i * 90)); }
+    beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
+    drumroll: safe(start => { clearInterval(roll); if (!start || !on) return; let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
+    click: safe(() => { if (on) noise(.05, .5, 2500); }),
+    riser: safe(() => { if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
+      g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); }),
+    crash: safe(first => { if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => { try { tone(f, 1.2, .18); } catch (e) {} }, i * 90)); })
   };
 })();
 $('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
