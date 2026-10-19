@@ -39,6 +39,7 @@
   .done.show{display:block;animation:pop .35s ease-out}
   @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
   @media (prefers-reduced-motion:reduce){.done.show{animation:none}}
+  .done .go{display:block;margin-top:28px;padding:16px;border-radius:14px;background:var(--ink);color:#fff;text-decoration:none;font-weight:700;font-size:17px}
   footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
 </style>
 </head>
@@ -65,6 +66,7 @@
     <h2 id="doneName"></h2>
     <p>출석이 확인되었습니다.<br>행사 끝까지 함께해 주세요.</p>
     <div class="time" id="doneTime"></div>
+    <a class="go" href="photo.html">📷 사진 이벤트 참여하기</a>
   </section>
 </main>
 <footer>한국경제TV 노동조합</footer>

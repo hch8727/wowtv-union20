@@ -44,6 +44,13 @@
   .toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
   .toggle.on{background:var(--ok)}.toggle.on::after{left:23px}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;display:none}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+  .pc{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .pc img{width:100%;aspect-ratio:1;object-fit:cover;display:block;cursor:zoom-in}
+  .pc.hid img{opacity:.3}
+  .pc .b{padding:8px 10px;font-size:13px}
+  .pc .b .m{color:var(--muted);display:flex;justify-content:space-between;margin-top:4px}
+  .pc .b button{width:100%;margin-top:8px;padding:6px;font-size:12px}
   .danger-zone{border-color:#f3c6c1}
   .danger-zone h3{margin:0 0 8px;color:var(--err);font-size:15px}
   .danger-zone p{margin:0 0 12px;color:var(--muted)}
@@ -54,10 +61,11 @@
 
 <header>
   <img src="https://img.wowtv.co.kr/PcStyle/images/ir/logo.png" alt="한국경제TV" style="width:auto;height:auto;max-width:100%">
-  <h1>관리자 | 한국경제TV노조출석부</h1>
+  <h1>관리자</h1>
   <nav>
     <button data-p="att" class="on">출석 명단</button>
     <button data-p="prize">상품</button>
+    <button data-p="photo">사진</button>
     <button data-p="set">설정</button>
   </nav>
   <button id="logout">로그아웃</button>
@@ -94,6 +102,16 @@
     </div>
     <table><thead><tr><th>순서</th><th>등수</th><th>상품명</th><th>인원</th><th></th></tr></thead><tbody id="prizeBody"></tbody></table>
     <p style="color:var(--muted);font-size:13px">진행 순서는 작은 번호부터. 1등은 마지막 순서로 두세요.</p>
+  </section>
+
+  <!-- 사진 -->
+  <section class="panel" id="p-photo">
+    <div class="card stat">
+      <div><b id="phN">0</b><span>사진</span></div>
+      <div><b id="phL">0</b><span>좋아요</span></div>
+      <div><b id="phH">0</b><span>숨김</span></div>
+    </div>
+    <div class="pgrid" id="phGrid"></div>
   </section>
 
   <!-- 설정 -->
@@ -147,7 +165,7 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
   b.classList.add('on'); $('p-' + b.dataset.p).classList.add('on');
 });
 
-async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings()]); setInterval(loadAtt, 5000); }
+async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings(), loadPhotos()]); setInterval(loadAtt, 5000); setInterval(loadPhotos, 8000); }
 
 /* 출석 명단 */
 async function loadAtt(){
@@ -207,6 +225,24 @@ $('prizeBody').onclick = async e => {
   const eid = e.target.dataset.e, did = e.target.dataset.d;
   if (eid) { const p = prizes.find(x => x.id == eid); editId = p.id; $('pOrder').value = p.draw_order; $('pRank').value = p.rank; $('pName').value = p.name; $('pCount').value = p.winner_count; $('pSave').textContent = '저장'; $('pCancel').style.display = ''; }
   if (did && confirm('이 상품을 삭제할까요?')) { await rpc('admin_prize_delete', { p_id: +did }); loadPrizes(); }
+};
+
+/* 사진 */
+const purl = p => sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
+let photosA = [];
+async function loadPhotos(){
+  photosA = await rpc('admin_photos', {}) || [];
+  $('phN').textContent = photosA.length; $('phL').textContent = photosA.reduce((s, p) => s + p.likes, 0); $('phH').textContent = photosA.filter(p => p.hidden).length;
+  $('phGrid').innerHTML = photosA.map(p => `<div class="pc ${p.hidden ? 'hid' : ''}">
+    <a href="${purl(p.path)}" target="_blank"><img src="${purl(p.path)}" loading="lazy"></a>
+    <div class="b"><div>${esc(p.caption || '<span style="color:var(--muted)">설명 없음</span>')}</div>
+      <div class="m"><span>${esc(p.author)} · ${p.last4 || ''}</span><span>♥ ${p.likes}</span></div>
+      <button data-h="${p.id}" data-v="${!p.hidden}" class="${p.hidden ? 'primary' : 'danger'}">${p.hidden ? '다시 표시' : '숨기기'}</button></div></div>`).join('')
+    || '<p style="color:var(--muted)">올라온 사진이 없습니다</p>';
+}
+$('phGrid').onclick = async e => {
+  const id = e.target.dataset.h; if (!id) return;
+  await rpc('admin_hide_photo', { p_photo: +id, p_hidden: e.target.dataset.v === 'true' }); loadPhotos();
 };
 
 /* 설정 */
