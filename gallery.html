@@ -19,7 +19,7 @@
   #show{position:absolute;inset:120px 56px 40px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:40px;align-items:stretch}
   .feat{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:0}
   .frame{position:relative;background:#fff;padding:18px 18px 0;border-radius:6px;box-shadow:0 30px 70px rgba(0,0,0,.45);margin:0 auto;max-width:100%;
-         opacity:0;transform:translateY(16px) rotate(-.6deg);transition:opacity .8s ease,transform .8s ease}
+         opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s ease;will-change:opacity,transform}
   .frame.on{opacity:1;transform:none}
   .frame img{display:block;max-width:100%;max-height:calc(100vh - 360px);width:auto;height:auto;border-radius:2px;background:#eee}
   .frame .label{padding:16px 4px 18px;color:#1a2a3a;display:flex;justify-content:space-between;align-items:baseline;gap:16px}
@@ -94,12 +94,16 @@ async function load(){
   $('n').textContent = photos.length ? photos.length + '장' : '';
   $('empty').style.display = photos.length ? 'none' : '';
   $('feat').style.display = $('wall').style.display = photos.length ? '' : 'none';
-  if (added) { newest = photos[photos.length - 1].id; setTimeout(() => { newest = null; renderWall(); }, 20000); }
+  if (added) { newest = photos[photos.length - 1].id; setTimeout(() => { newest = null; renderWall(true); }, 20000); }
   renderWall();
   if (added) jump(photos.length - 1);                       // 새 사진은 바로 크게
   else if (idx < 0 && photos.length) next();
 }
-function renderWall(){
+let wallKey = '';
+function renderWall(force){
+  const key = photos.map(p => p.id).join() + '|' + newest;
+  if (!force && key === wallKey) return;                    // 변화 없으면 다시 그리지 않음
+  wallKey = key;
   const recent = [...photos].reverse();                     // 최신순
   const show = recent.slice(0, TILES), rest = recent.length - show.length;
   $('wall').innerHTML = show.map((p, i) => `<div class="tile ${p.id === newest ? 'new' : ''}" data-id="${p.id}"><img src="${url(p.path)}" loading="lazy">
@@ -109,13 +113,19 @@ function renderWall(){
 function markWall(){ const id = photos[idx]?.id; $('wall').querySelectorAll('.tile').forEach(t => t.classList.toggle('on', +t.dataset.id === id)); }
 $('wall').onclick = e => { const t = e.target.closest('.tile'); if (!t) return; const i = photos.findIndex(p => p.id === +t.dataset.id); if (i >= 0) jump(i); };
 function next(){ if (!photos.length) return; jump((idx + 1) % photos.length); }
-function jump(i){
-  clearTimeout(timer); idx = i; const p = photos[i];
+const preload = src => new Promise(res => { const im = new Image(); im.onload = im.onerror = () => res(); im.src = src; setTimeout(res, 2500); });
+let seq = 0;
+async function jump(i){
+  clearTimeout(timer); const my = ++seq; const p = photos[i];
+  await preload(url(p.path));                                // 받아둔 뒤 전환 → 끊김 없음
+  if (my !== seq) return;                                    // 그 사이 다른 전환이 시작됐으면 취소
+  idx = i;
   const old = $('feat').querySelector('.frame.on'); if (old) { old.classList.remove('on'); setTimeout(() => old.remove(), 900); }
   const f = document.createElement('div'); f.className = 'frame';
   f.innerHTML = `<img src="${url(p.path)}"><div class="label"><span class="c ${p.caption ? '' : 'none'}">${esc(p.caption || '제목 없음')}</span><span class="a">${last4[p.author] || ''}</span></div>`;
   $('feat').appendChild(f); requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('on')));
   markWall(); timer = setTimeout(next, SLIDE_MS);
+  const nx = photos[(i + 1) % photos.length]; if (nx) preload(url(nx.path));
 }
 
 /* ── 결과 발표 ── */
