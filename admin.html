@@ -228,7 +228,7 @@ $('prizeBody').onclick = async e => {
 };
 
 /* 사진 */
-const purl = p => sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
+const purl = p => /^https?:/.test(p) ? p : sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
 let photosA = [];
 async function loadPhotos(){
   photosA = await rpc('admin_photos', {}) || [];

@@ -65,7 +65,7 @@ const SLIDE_MS = 6000, POLL_MS = 8000;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const url = p => sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
+const url = p => /^https?:/.test(p) ? p : sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
 
 let photos = [], idx = -1, last4 = {}, timer;
 
