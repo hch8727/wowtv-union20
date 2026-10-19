@@ -16,10 +16,10 @@
   .brand{width:auto;height:auto;max-width:100%;background:#fff;padding:10px 18px;border-radius:12px;box-sizing:content-box}
   .stage{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
   .label{font-size:28px;color:var(--gold-soft);font-weight:500;letter-spacing:.02em}
-  .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:8px 0 0;vertical-align:bottom}
-  .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4)}
+  .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:0;font-variant-numeric:tabular-nums;margin:8px 0 0;vertical-align:bottom}
+  .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4);transform-origin:center}
   @keyframes bump{30%{transform:scale(1.06);color:var(--gold-soft)}}
-  .unit{font-size:40px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:.35em}
+  .unit{font-size:40px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:1.1em}
   .recent{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:900px;min-height:52px}
   .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:10px 22px;font-size:24px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums;animation:slide .4s ease-out}
   .chip:first-child{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:800}
@@ -31,10 +31,10 @@
   @keyframes popin{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,40%) scale(.3)}}
   #pop small{display:block;font-size:28px;font-weight:600;letter-spacing:.1em;color:var(--gold-soft);text-shadow:none;margin-top:-10px}
   /* 7. 숫자 롤업 */
-  .count{display:inline-flex;overflow:hidden;height:1.2em;line-height:1.2}
-  .digit{display:inline-block;width:.62em;height:1.2em;position:relative}
+  .count{display:inline-flex;overflow:hidden;height:1.5em;line-height:1.5}
+  .digit{display:inline-block;width:.68em;height:1.5em;position:relative}
   .digit .col{position:absolute;left:0;top:0;width:100%;transition:transform .9s cubic-bezier(.2,.8,.2,1)}
-  .digit .col span{display:block;height:1.2em;line-height:1.2;text-align:center}
+  .digit .col span{display:block;height:1.5em;line-height:1.5;text-align:center}
   .countRow{display:flex;align-items:baseline;justify-content:center;gap:14px}
   /* 8. 파티클 */
   #bg{position:fixed;inset:0;z-index:0;pointer-events:none}
@@ -114,7 +114,7 @@ function setCount(n){
   if (cur.length !== str.length) {
     $count.innerHTML = [...str].map(() => `<span class="digit"><span class="col">${Array.from({length:10},(_, i) => `<span>${i}</span>`).join('')}</span></span>`).join('');
   }
-  [...str].forEach((d, i) => { const col = $count.querySelectorAll('.digit .col')[i]; col.style.transform = `translateY(-${d * 1.2}em)`; });
+  [...str].forEach((d, i) => { const col = $count.querySelectorAll('.digit .col')[i]; col.style.transform = `translateY(-${d * 1.5}em)`; });
 }
 /* 6. 출석 순간 연출 */
 function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l4 || '????'}<small>출석 완료</small>`; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
