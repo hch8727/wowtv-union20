@@ -180,11 +180,16 @@ document.addEventListener('keydown', e => {
 });
 
 async function draw(n, append = false){
+  try { await drawInner(n, append); }
+  catch (e) { toast('오류: ' + (e.message || e)); console.error(e); }
+  finally { Snd.drumroll(false); $('cd').classList.remove('on'); busy = false; $('btnDraw').disabled = !current; }
+}
+async function drawInner(n, append){
   if (busy || !current) return; busy = true;
   $('btnDraw').disabled = $('btnRedraw').disabled = $('btnNext').disabled = true;
   const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
   const pool = people.filter(p => !won.has(p.id));
-  if (pool.length < n) { toast('추첨 대상이 부족합니다'); busy = false; $('btnDraw').disabled = false; return; }
+  if (pool.length < n) { toast('추첨 대상이 부족합니다'); return; }
 
   await countdown();
   const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
@@ -194,20 +199,22 @@ async function draw(n, append = false){
   Snd.drumroll(true);
 
   const { data, error } = await req;
-  if (error) { Snd.drumroll(false); toast(error.message); box.className = 'names'; busy = false; $('btnDraw').disabled = false; return; }
+  if (error) { box.className = 'names'; box.innerHTML = ''; throw new Error(error.message); }
 
   const isFirst = current.rank === 1;
-  for (let i = 0; i < reels.length; i++) {           // 릴을 하나씩 순차 정지
-    await reels[i].stopAt(data[i].last4, 2600 + i * 900);
+  const gap = reels.length > 5 ? 450 : 800;          // 릴을 왼쪽부터 순차 정지 (타이머는 동시에 시작)
+  const stops = reels.map((r, i) => r.stopAt(data[i].last4, 2200 + i * gap));
+  for (let i = 0; i < stops.length; i++) {
+    await stops[i];
     Snd.click(); reels[i].el.classList.add('stop', isFirst ? 'first' : 'win');
-    if (i < reels.length - 1) Snd.riser();
+    if (i < stops.length - 1) Snd.riser();
   }
   Snd.drumroll(false); Snd.crash(isFirst);
   celebrate(isFirst);
   lastDraw = append ? [...lastDraw, ...data] : data;
   box.className = 'names win';
   $('btnRedraw').disabled = false; $('btnNext').disabled = false;
-  busy = false; refresh();
+  refresh();
 }
 
 /* ── 슬롯 릴 ── */
