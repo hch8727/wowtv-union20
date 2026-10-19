@@ -27,21 +27,25 @@
   .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
   .names{margin:26px 0 34px;min-height:220px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
   .hint{color:var(--muted);font-size:20px}
-  /* 슬롯 릴 */
-  .reel{--h:150px;height:var(--h);width:290px;overflow:hidden;border-radius:22px;background:#fff;color:var(--ink);position:relative;
-        box-shadow:inset 0 14px 24px rgba(0,0,0,.18),inset 0 -14px 24px rgba(0,0,0,.18),0 10px 30px rgba(0,0,0,.35)}
-  .reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:38px;pointer-events:none;z-index:2}
-  .reel::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}
-  .reel::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
-  .reel .strip{will-change:transform}
-  .reel .cell{height:var(--h);display:grid;place-items:center;font-size:92px;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums}
-  .reel.stop{animation:thud .35s cubic-bezier(.2,.9,.3,1.6)}
-  .names.win .reel{cursor:pointer}
-  .names.win .reel:hover{outline:3px solid #fff;outline-offset:4px}
-  .reel.win{background:var(--gold);color:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 0 60px rgba(30,194,242,.8)}
-  .reel.first{background:#f4c84a;color:#3a2a00;box-shadow:0 0 0 6px rgba(255,255,255,.3),0 0 80px rgba(244,200,74,.9)}
-  @keyframes thud{40%{transform:translateY(8px) scale(1.03)}}
-  .names.rolling .reel{filter:none}
+  /* 슬롯 릴: 자리별 4개 컬럼 */
+  .reel{--h:150px;display:flex;gap:8px;padding:12px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;transition:background .3s,box-shadow .3s}
+  .dcol{height:var(--h);width:84px;overflow:hidden;border-radius:14px;background:#fff;color:var(--ink);position:relative;
+        box-shadow:inset 0 14px 22px rgba(0,0,0,.16),inset 0 -14px 22px rgba(0,0,0,.16)}
+  .dcol::before,.dcol::after{content:"";position:absolute;left:0;right:0;height:34px;pointer-events:none;z-index:2}
+  .dcol::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}
+  .dcol::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
+  .dcol .strip{will-change:transform}
+  .dcol .cell{height:var(--h);display:grid;place-items:center;font-size:96px;font-weight:800;font-variant-numeric:tabular-nums}
+  .dcol.stop{animation:thud .3s cubic-bezier(.2,.9,.3,1.6)}
+  .dcol.set{background:var(--gold);color:#fff;box-shadow:0 0 30px rgba(30,194,242,.7)}
+  .dcol.set::before{background:linear-gradient(var(--gold),rgba(30,194,242,0))}
+  .dcol.set::after{background:linear-gradient(rgba(30,194,242,0),var(--gold))}
+  .reel.win{background:rgba(30,194,242,.18);border-color:var(--gold);box-shadow:0 0 0 4px rgba(255,255,255,.2),0 0 70px rgba(30,194,242,.7)}
+  .reel.first .dcol.set{background:#f4c84a;color:#3a2a00;box-shadow:0 0 30px rgba(244,200,74,.8)}
+  .reel.first .dcol.set::before{background:linear-gradient(#f4c84a,rgba(244,200,74,0))}
+  .reel.first .dcol.set::after{background:linear-gradient(rgba(244,200,74,0),#f4c84a)}
+  .reel.first{background:rgba(244,200,74,.15);border-color:#f4c84a;box-shadow:0 0 0 4px rgba(255,255,255,.25),0 0 90px rgba(244,200,74,.8)}
+  @keyframes thud{40%{transform:translateY(8px) scale(1.04)}}
   /* 카운트다운 */
   #cd{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,30,55,.6);z-index:5;font-size:min(40vw,420px);font-weight:900;color:#fff}
   #cd.on{display:grid}
@@ -211,19 +215,18 @@ async function drawInner(n, append){
   const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
   const box = $('names'); box.className = 'names rolling';
   if (!append) box.innerHTML = '';
-  const reels = Array.from({length: n}, () => makeReel(pool)); reels.forEach(r => box.appendChild(r.el));
+  const reels = Array.from({length: n}, () => makeReel()); reels.forEach(r => box.appendChild(r.el));
   Snd.drumroll(true);
 
   const { data, error } = await req;
   if (error) { box.className = 'names'; box.innerHTML = ''; throw new Error(error.message); }
 
   const isFirst = current.rank === 1;
-  const gap = reels.length > 5 ? 450 : 800;          // 릴을 왼쪽부터 순차 정지 (타이머는 동시에 시작)
-  const stops = reels.map((r, i) => r.stopAt(data[i].last4, 2200 + i * gap));
+  const gap = reels.length > 1 ? 4200 : 0;           // 여러 명이면 릴 하나(4자리) 끝난 뒤 다음 릴
+  const stops = reels.map((r, i) => r.stopAt(data[i].last4, 1800 + i * gap));
   for (let i = 0; i < stops.length; i++) {
     await stops[i];
-    Snd.click(); reels[i].el.classList.add('stop', isFirst ? 'first' : 'win');
-    if (i < stops.length - 1) Snd.riser();
+    reels[i].el.classList.add(isFirst ? 'first' : 'win');
   }
   Snd.drumroll(false); Snd.crash(isFirst);
   celebrate(isFirst);
@@ -233,24 +236,35 @@ async function drawInner(n, append){
   refresh();
 }
 
-/* ── 슬롯 릴 ── */
-function makeReel(pool){
+/* ── 슬롯 릴: 4자리를 왼쪽부터 한 자리씩 정지 ── */
+function makeReel(){
   const el = document.createElement('div'); el.className = 'reel';
-  const strip = document.createElement('div'); strip.className = 'strip'; el.appendChild(strip);
-  const H = 150, N = 40;
-  const rnd = () => pool[Math.random() * pool.length | 0].last4 || '????';
-  strip.innerHTML = Array.from({length: N}, () => `<div class="cell">${rnd()}</div>`).join('');
-  let y = 0, speed = 38, raf, running = true;
-  (function spin(){ if (!running) return; y += speed; if (y >= H * (N - 1)) { y -= H * (N - 1 - 8); }
-    strip.style.transform = `translateY(${-y}px)`; raf = requestAnimationFrame(spin); })();
-  return { el, stopAt(val, delay){ return new Promise(res => setTimeout(() => {
-    running = false; cancelAnimationFrame(raf);
-    const cells = Array.from({length: 14}, () => `<div class="cell">${rnd()}</div>`); cells.push(`<div class="cell">${val}</div>`);
-    strip.innerHTML = cells.join(''); strip.style.transform = 'translateY(0)';
-    const target = -H * (cells.length - 1), t0 = performance.now(), D = 1400;
-    (function ease(t){ const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3);
-      strip.style.transform = `translateY(${target * e}px)`; k < 1 ? requestAnimationFrame(ease) : res(); })(t0);
-  }, delay)); } };
+  const H = 150, N = 30, DIGIT_GAP = 750;
+  const cols = Array.from({length: 4}, () => {
+    const col = document.createElement('div'); col.className = 'dcol';
+    const strip = document.createElement('div'); strip.className = 'strip'; col.appendChild(strip); el.appendChild(col);
+    strip.innerHTML = Array.from({length: N}, () => `<div class="cell">${Math.random() * 10 | 0}</div>`).join('');
+    let y = 0, speed = 34 + Math.random() * 10, raf, running = true;
+    (function spin(){ if (!running) return; y += speed; if (y >= H * (N - 1)) y -= H * (N - 1 - 6);
+      strip.style.transform = `translateY(${-y}px)`; raf = requestAnimationFrame(spin); })();
+    return { col, stop(d){ return new Promise(res => {
+      running = false; cancelAnimationFrame(raf);
+      const cells = Array.from({length: 12}, () => `<div class="cell">${Math.random() * 10 | 0}</div>`); cells.push(`<div class="cell">${d}</div>`);
+      strip.innerHTML = cells.join(''); strip.style.transform = 'translateY(0)';
+      const target = -H * (cells.length - 1), t0 = performance.now(), D = 900;
+      (function ease(t){ const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3);
+        strip.style.transform = `translateY(${target * e}px)`; k < 1 ? requestAnimationFrame(ease) : res(); })(t0);
+    }); } };
+  });
+  return { el, async stopAt(val, delay){
+    await new Promise(r => setTimeout(r, delay));
+    const digits = String(val || '????').padStart(4, '?').slice(-4).split('');
+    for (let k = 0; k < 4; k++) {
+      await cols[k].stop(digits[k]);
+      cols[k].col.classList.add('stop', 'set'); Snd.click();
+      if (k < 3) { Snd.riser(); await new Promise(r => setTimeout(r, DIGIT_GAP)); }
+    }
+  } };
 }
 
 /* ── 카운트다운 ── */
