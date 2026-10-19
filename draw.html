@@ -25,12 +25,28 @@
   .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
   .prize{font-size:30px;color:var(--gold-soft);font-weight:500}
   .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
-  .names{margin:26px 0 34px;min-height:200px;display:flex;flex-wrap:wrap;gap:18px 28px;justify-content:center;align-items:center;max-width:1100px}
-  .name{font-size:96px;line-height:1.05;font-weight:800;letter-spacing:-.03em}
-  .names.rolling .name{color:var(--muted);filter:blur(1px)}
-  .names.win .name{animation:reveal .6s cubic-bezier(.2,.9,.3,1.3)}
-  @keyframes reveal{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .names{margin:26px 0 34px;min-height:220px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
   .hint{color:var(--muted);font-size:20px}
+  /* 슬롯 릴 */
+  .reel{--h:150px;height:var(--h);width:290px;overflow:hidden;border-radius:22px;background:#fff;color:var(--ink);position:relative;
+        box-shadow:inset 0 14px 24px rgba(0,0,0,.18),inset 0 -14px 24px rgba(0,0,0,.18),0 10px 30px rgba(0,0,0,.35)}
+  .reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:38px;pointer-events:none;z-index:2}
+  .reel::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}
+  .reel::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
+  .reel .strip{will-change:transform}
+  .reel .cell{height:var(--h);display:grid;place-items:center;font-size:92px;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+  .reel.stop{animation:thud .35s cubic-bezier(.2,.9,.3,1.6)}
+  .reel.win{background:var(--gold);color:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 0 60px rgba(30,194,242,.8)}
+  .reel.first{background:#f4c84a;color:#3a2a00;box-shadow:0 0 0 6px rgba(255,255,255,.3),0 0 80px rgba(244,200,74,.9)}
+  @keyframes thud{40%{transform:translateY(8px) scale(1.03)}}
+  .names.rolling .reel{filter:none}
+  /* 카운트다운 */
+  #cd{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,30,55,.6);z-index:5;font-size:min(40vw,420px);font-weight:900;color:#fff}
+  #cd.on{display:grid}
+  #cd span{animation:cd .8s ease-out both}
+  @keyframes cd{0%{transform:scale(1.8);opacity:0}30%{opacity:1}100%{transform:scale(.9);opacity:0}}
+  canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:6}
+  .snd{position:fixed;right:16px;bottom:12px;font-size:13px;color:var(--muted);background:transparent;border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:8px}
   .ctrl{display:flex;gap:12px;margin-top:10px}
   .ctrl button{padding:16px 34px;font-size:20px;font-weight:700;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
   .ctrl button.primary{background:var(--gold);color:#fff;border-color:var(--gold);font-size:24px;padding:18px 48px}
@@ -59,7 +75,7 @@
 
   <section class="stage">
     <div class="prize" id="prizeTitle">상품을 선택하세요</div>
-    <div class="names" id="names"><span class="hint">스페이스바 또는 추첨 버튼</span></div>
+    <div class="names" id="names"><span class="hint">스페이스바 또는 추첨 버튼 · 전화번호 뒷자리로 표시됩니다</span></div>
     <div class="ctrl">
       <button id="btnDraw" class="primary" disabled>추첨</button>
       <button id="btnRedraw" disabled>부재 → 재추첨</button>
@@ -74,7 +90,11 @@
   </aside>
 </div>
 <div class="toast" id="toast"></div>
+<div id="cd"></div>
+<canvas id="fx"></canvas>
+<button class="snd" id="snd">🔊 사운드 켜짐</button>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://pmpifokwmrkqrmumycjx.supabase.co';
@@ -106,7 +126,7 @@ async function loadPrizes(){
 }
 async function refresh(){
   const [a, w] = await Promise.all([
-    sb.from('attendee_public').select('id,name'),
+    sb.from('attendee_public').select('id,last4'),
     sb.from('winners').select('id,attendee_id,prize_id,cancelled,drawn_at').order('drawn_at')
   ]);
   people = a.data || []; winners = w.data || [];
@@ -115,16 +135,16 @@ async function refresh(){
   $('poolN').textContent = people.filter(p => !won.has(p.id)).length;
   renderLog();
 }
-const nameOf = id => (people.find(p => p.id === id) || {}).name || '?';
+const l4Of = id => (people.find(p => p.id === id) || {}).last4 || '????';
 const prizeOf = id => prizes.find(p => p.id === id) || {};
 function renderLog(){
   $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
-    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${esc(nameOf(w.attendee_id))}</s>` : esc(nameOf(w.attendee_id))}</span>
+    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)}</s>` : l4Of(w.attendee_id)}</span>
     ${w.cancelled ? '' : `<button data-c="${w.id}">취소</button>`}</div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
 }
 $('log').onclick = async e => {
   const id = e.target.dataset.c; if (!id) return;
-  if (!confirm(nameOf(winners.find(w => w.id == id).attendee_id) + ' 님 당첨을 취소할까요?')) return;
+  if (!confirm('뒷자리 ' + l4Of(winners.find(w => w.id == id).attendee_id) + ' 당첨을 취소할까요?')) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +id }); refresh();
 };
 
@@ -132,7 +152,7 @@ $('log').onclick = async e => {
 $('prizeSel').onchange = () => {
   current = prizeOf(+$('prizeSel').value); if (!current.id) current = null;
   $('prizeTitle').innerHTML = current ? `<b>${current.rank}등</b>${esc(current.name)}` : '상품을 선택하세요';
-  $('names').innerHTML = '<span class="hint">스페이스바 또는 추첨 버튼</span>'; $('names').className = 'names';
+  $('names').innerHTML = '<span class="hint">스페이스바 또는 추첨 버튼 · 전화번호 뒷자리로 표시됩니다</span>'; $('names').className = 'names';
   $('btnDraw').disabled = !current; $('btnRedraw').disabled = true; $('btnNext').disabled = true; lastDraw = [];
 };
 
@@ -140,9 +160,10 @@ $('prizeSel').onchange = () => {
 $('btnDraw').onclick = () => draw(current.winner_count);
 $('btnRedraw').onclick = async () => {
   if (!lastDraw.length) return;
-  const bad = lastDraw.length === 1 ? lastDraw[0] : lastDraw[+prompt('몇 번째 당첨자가 부재인가요? (1~' + lastDraw.length + ')') - 1];
+  const bad = lastDraw.length === 1 ? lastDraw[0] : lastDraw[+prompt('부재자의 전화번호 뒷자리 순서는? (1~' + lastDraw.length + ', 왼쪽부터)') - 1];
   if (!bad) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id });
+  const idx = lastDraw.indexOf(bad); $('names').querySelectorAll('.reel')[idx]?.remove();
   lastDraw = lastDraw.filter(x => x !== bad);
   draw(1, true);
 };
@@ -161,26 +182,89 @@ async function draw(n, append = false){
   const pool = people.filter(p => !won.has(p.id));
   if (pool.length < n) { toast('추첨 대상이 부족합니다'); busy = false; $('btnDraw').disabled = false; return; }
 
-  // 서버 추첨 먼저(결과 확정) → 그 동안 롤링 연출
-  const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });
+  await countdown();
+  const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
   const box = $('names'); box.className = 'names rolling';
-  const t0 = Date.now(), DUR = 3200;
-  await new Promise(res => {
-    (function roll(){
-      const el = Date.now() - t0;
-      box.innerHTML = Array.from({length: n}, () => `<span class="name">${esc(pool[Math.random() * pool.length | 0].name)}</span>`).join('');
-      el < DUR ? setTimeout(roll, 40 + (el / DUR) ** 2 * 260) : res();
-    })();
-  });
-  const { data, error } = await req;
-  if (error) { toast(error.message); box.className = 'names'; busy = false; $('btnDraw').disabled = false; return; }
+  if (!append) box.innerHTML = '';
+  const reels = Array.from({length: n}, () => makeReel(pool)); reels.forEach(r => box.appendChild(r.el));
+  Snd.drumroll(true);
 
+  const { data, error } = await req;
+  if (error) { Snd.drumroll(false); toast(error.message); box.className = 'names'; busy = false; $('btnDraw').disabled = false; return; }
+
+  const isFirst = current.rank === 1;
+  for (let i = 0; i < reels.length; i++) {           // 릴을 하나씩 순차 정지
+    await reels[i].stopAt(data[i].last4, 2600 + i * 900);
+    Snd.click(); reels[i].el.classList.add('stop', isFirst ? 'first' : 'win');
+    if (i < reels.length - 1) Snd.riser();
+  }
+  Snd.drumroll(false); Snd.crash(isFirst);
+  celebrate(isFirst);
   lastDraw = append ? [...lastDraw, ...data] : data;
   box.className = 'names win';
-  box.innerHTML = lastDraw.map(w => `<span class="name">${esc(w.name)}</span>`).join('');
   $('btnRedraw').disabled = false; $('btnNext').disabled = false;
   busy = false; refresh();
 }
+
+/* ── 슬롯 릴 ── */
+function makeReel(pool){
+  const el = document.createElement('div'); el.className = 'reel';
+  const strip = document.createElement('div'); strip.className = 'strip'; el.appendChild(strip);
+  const H = 150, N = 40;
+  const rnd = () => pool[Math.random() * pool.length | 0].last4 || '????';
+  strip.innerHTML = Array.from({length: N}, () => `<div class="cell">${rnd()}</div>`).join('');
+  let y = 0, speed = 38, raf, running = true;
+  (function spin(){ if (!running) return; y += speed; if (y >= H * (N - 1)) { y -= H * (N - 1 - 8); }
+    strip.style.transform = `translateY(${-y}px)`; raf = requestAnimationFrame(spin); })();
+  return { el, stopAt(val, delay){ return new Promise(res => setTimeout(() => {
+    running = false; cancelAnimationFrame(raf);
+    const cells = Array.from({length: 14}, () => `<div class="cell">${rnd()}</div>`); cells.push(`<div class="cell">${val}</div>`);
+    strip.innerHTML = cells.join(''); strip.style.transform = 'translateY(0)';
+    const target = -H * (cells.length - 1), t0 = performance.now(), D = 1400;
+    (function ease(t){ const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3);
+      strip.style.transform = `translateY(${target * e}px)`; k < 1 ? requestAnimationFrame(ease) : res(); })(t0);
+  }, delay)); } };
+}
+
+/* ── 카운트다운 ── */
+function countdown(){ return new Promise(async res => {
+  const cd = $('cd'); cd.classList.add('on');
+  for (const n of ['3','2','1']) { cd.innerHTML = `<span>${n}</span>`; Snd.beep(n === '1'); await new Promise(r => setTimeout(r, 800)); }
+  cd.classList.remove('on'); res();
+}); }
+
+/* ── 컨페티 ── */
+const fxConfetti = confetti.create($('fx'), { resize: true, useWorker: true });
+function celebrate(first){
+  const colors = first ? ['#f4c84a','#ffffff','#ffe08a','#1EC2F2'] : ['#1EC2F2','#ffffff','#8FE3FF','#00538E'];
+  const shoot = (x, angle, n) => fxConfetti({ particleCount: n, angle, spread: 65, origin: { x, y: .7 }, colors, startVelocity: 55, scalar: 1.2, ticks: 260 });
+  shoot(0, 60, first ? 160 : 90); shoot(1, 120, first ? 160 : 90);
+  if (first) { let k = 0; const t = setInterval(() => { fxConfetti({ particleCount: 40, spread: 360, origin: { x: Math.random(), y: Math.random() * .4 }, colors, scalar: 1.4, ticks: 300, gravity: .7 }); if (++k > 10) clearInterval(t); }, 220); }
+  else setTimeout(() => fxConfetti({ particleCount: 120, spread: 100, origin: { y: .55 }, colors, ticks: 220 }), 250);
+}
+
+/* ── 사운드 (Web Audio 합성, 파일 불필요) ── */
+const Snd = (() => {
+  let ctx, on = true, roll;
+  const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const noise = (dur, gain, lp) => { const c = ac(), b = c.createBuffer(1, c.sampleRate * dur, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
+    const src = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter(); src.buffer = b; f.type = 'lowpass'; f.frequency.value = lp; g.gain.value = gain;
+    src.connect(f).connect(g).connect(c.destination); src.start(); };
+  const tone = (freq, dur, gain, type = 'sine') => { const c = ac(), o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
+  return {
+    toggle(){ on = !on; if (!on) this.drumroll(false); return on; },
+    beep(last){ if (on) tone(last ? 880 : 660, .18, .25, 'square'); },
+    drumroll(start){ clearInterval(roll); if (!start || !on) return; let i = 0; roll = setInterval(() => { noise(.06, .35, 900 + (i++ % 2) * 300); }, 55); },
+    click(){ if (on) noise(.05, .5, 2500); },
+    riser(){ if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
+      g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); },
+    crash(first){ if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => tone(f, 1.2, .18), i * 90)); }
+  };
+})();
+$('snd').onclick = () => { $('snd').textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; };
+
 function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 3000); }
 </script>
 </body>

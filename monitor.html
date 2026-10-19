@@ -16,14 +16,28 @@
   .brand{width:auto;height:auto;max-width:100%;background:#fff;padding:10px 18px;border-radius:12px;box-sizing:content-box}
   .stage{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
   .label{font-size:28px;color:var(--gold-soft);font-weight:500;letter-spacing:.02em}
-  .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:8px 0 0}
+  .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:8px 0 0;vertical-align:bottom}
   .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4)}
   @keyframes bump{30%{transform:scale(1.06);color:var(--gold-soft)}}
   .unit{font-size:36px;font-weight:600;color:var(--muted);margin-left:12px;letter-spacing:0}
   .recent{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:900px;min-height:52px}
-  .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:10px 20px;font-size:22px;animation:slide .4s ease-out}
-  .chip:first-child{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:700}
+  .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:10px 22px;font-size:24px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums;animation:slide .4s ease-out}
+  .chip:first-child{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:800}
   @keyframes slide{from{opacity:0;transform:translateY(10px)}}
+  /* 6. 출석 순간 연출 */
+  #pop{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:200px;font-weight:900;letter-spacing:.06em;color:#fff;
+       text-shadow:0 0 40px rgba(30,194,242,.9),0 0 90px rgba(30,194,242,.6);pointer-events:none;opacity:0;z-index:4}
+  #pop.go{animation:popin 1.6s cubic-bezier(.2,.9,.3,1) forwards}
+  @keyframes popin{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,40%) scale(.3)}}
+  #pop small{display:block;font-size:28px;font-weight:600;letter-spacing:.1em;color:var(--gold-soft);text-shadow:none;margin-top:-10px}
+  /* 7. 숫자 롤업 */
+  .count{display:inline-flex;overflow:hidden;height:1em}
+  .digit{display:inline-block;width:.62em;height:1em;position:relative}
+  .digit .col{position:absolute;left:0;top:0;width:100%;transition:transform .9s cubic-bezier(.2,.8,.2,1)}
+  .digit .col span{display:block;height:1em;line-height:1;text-align:center}
+  /* 8. 파티클 */
+  #bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .wrap{position:relative;z-index:1}
   aside{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px}
   .qr{background:#fff;padding:18px;border-radius:20px;width:300px;height:300px;display:grid;place-items:center}
   .qr img,.qr canvas{width:264px!important;height:264px!important;image-rendering:pixelated}
@@ -35,6 +49,8 @@
 </style>
 </head>
 <body>
+<canvas id="bg"></canvas>
+<div id="pop"></div>
 <div class="wrap">
   <header>
     <img class="brand" src="https://img.wowtv.co.kr/PcStyle/images/ir/logo.png" alt="한국경제TV">
@@ -69,20 +85,21 @@ let last = -1, lastIds = new Set();
 
 async function tick(){
   const { data, error } = await sb.from('attendee_public')
-    .select('id,name,checked_in_at', { count: 'exact' })
+    .select('id,last4,checked_in_at', { count: 'exact' })
     .order('checked_in_at', { ascending: false }).limit(RECENT_N);
   if (error) { $status.textContent = '연결 오류: ' + error.message; $status.className = 'status'; return; }
   $status.textContent = '실시간 반영 중'; $status.className = 'status live';
 
   const total = data.length ? await countAll() : 0;
   if (total !== last) {
-    $count.textContent = total.toLocaleString('ko-KR');
+    setCount(total);
     if (last >= 0) { $count.classList.remove('bump'); void $count.offsetWidth; $count.classList.add('bump'); }
     last = total;
   }
   const ids = data.map(r => r.id).join();
   if (ids !== [...lastIds].join()) {
-    $recent.innerHTML = data.map(r => `<span class="chip">${esc(r.name)}</span>`).join('');
+    if (lastIds.size) { const fresh = data.filter(r => !lastIds.has(r.id)).reverse(); fresh.forEach((r, i) => setTimeout(() => popIn(r.last4), i * 700)); }
+    $recent.innerHTML = data.map(r => `<span class="chip">${r.last4 || '????'}</span>`).join('');
     lastIds = new Set(data.map(r => r.id));
   }
 }
@@ -90,9 +107,35 @@ async function countAll(){
   const { count } = await sb.from('attendee_public').select('id', { count: 'exact', head: true });
   return count ?? 0;
 }
-const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* 7. 숫자 롤업 — 자리별 세로 롤러 */
+function setCount(n){
+  const str = String(n), cur = $count.querySelectorAll('.digit');
+  if (cur.length !== str.length) {
+    $count.innerHTML = [...str].map(() => `<span class="digit"><span class="col">${Array.from({length:10},(_, i) => `<span>${i}</span>`).join('')}</span></span>`).join('');
+  }
+  [...str].forEach((d, i) => { const col = $count.querySelectorAll('.digit .col')[i]; col.style.transform = `translateY(-${d}em)`; });
+}
+/* 6. 출석 순간 연출 */
+function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l4 || '????'}<small>출석 완료</small>`; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
+/* 8. 떠다니는 빛 입자 */
+(function particles(){
+  const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H, P = [];
+  const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; };
+  size(); addEventListener('resize', size);
+  for (let i = 0; i < 70; i++) P.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1 + Math.random() * 3, vx: (Math.random() - .5) * .25, vy: -.15 - Math.random() * .35, a: Math.random() * Math.PI * 2 });
+  (function frame(){
+    x.clearRect(0, 0, W, H);
+    for (const p of P) {
+      p.x += p.vx; p.y += p.vy; p.a += .02; if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+      const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+      g.addColorStop(0, `rgba(143,227,255,${.35 + Math.sin(p.a) * .25})`); g.addColorStop(1, 'rgba(143,227,255,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(p.x, p.y, p.r * 4, 0, 7); x.fill();
+    }
+    requestAnimationFrame(frame);
+  })();
+})();
 
-tick(); setInterval(tick, POLL_MS);
+setCount(0); tick(); setInterval(tick, POLL_MS);
 </script>
 </body>
 </html>
