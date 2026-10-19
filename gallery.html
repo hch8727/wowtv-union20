@@ -15,19 +15,24 @@
   .brand{width:auto;height:auto;max-width:100%;background:#fff;padding:10px 18px;border-radius:12px;box-sizing:content-box}
   .title{font-size:26px;font-weight:600;color:var(--gold-soft)}
   .title b{color:#fff;font-weight:800;margin-left:10px}
-  /* 슬라이드 */
-  #show{position:absolute;inset:0;display:grid;place-items:center;padding:130px 56px 90px}
-  .slide{position:absolute;inset:130px 56px 90px;display:grid;place-items:center;opacity:0;transition:opacity .9s ease,transform .9s ease;transform:scale(.96)}
-  .slide.on{opacity:1;transform:scale(1)}
-  .slide img{max-width:100%;max-height:100%;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.45);background:#000}
-  .slide .cap{position:absolute;left:50%;bottom:-62px;transform:translateX(-50%);background:rgba(0,0,0,.35);backdrop-filter:blur(6px);
-              padding:10px 22px;border-radius:999px;font-size:22px;white-space:nowrap}
-  .slide .cap small{color:var(--gold-soft);margin-left:12px;font-size:18px;letter-spacing:.06em}
-  .empty{color:var(--muted);font-size:28px;text-align:center}
-  /* 썸네일 띠 */
-  .strip{position:fixed;left:0;right:0;bottom:0;height:70px;display:flex;gap:8px;padding:10px 56px;overflow:hidden;background:linear-gradient(transparent,rgba(0,0,0,.35))}
-  .strip img{height:50px;width:50px;object-fit:cover;border-radius:8px;opacity:.5;flex:none}
-  .strip img.on{opacity:1;outline:2px solid var(--gold)}
+  /* 전시 벽 레이아웃 */
+  #show{position:absolute;inset:120px 56px 40px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:40px;align-items:stretch}
+  .feat{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:0}
+  .frame{position:relative;background:#fff;padding:18px 18px 0;border-radius:6px;box-shadow:0 30px 70px rgba(0,0,0,.45);margin:0 auto;max-width:100%;
+         opacity:0;transform:translateY(16px) rotate(-.6deg);transition:opacity .8s ease,transform .8s ease}
+  .frame.on{opacity:1;transform:none}
+  .frame img{display:block;max-width:100%;max-height:calc(100vh - 360px);width:auto;height:auto;border-radius:2px;background:#eee}
+  .frame .label{padding:16px 4px 18px;color:#1a2a3a;display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+  .frame .label .c{font-size:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .frame .label .c.none{color:#9aa7b4;font-weight:400}
+  .frame .label .a{font-size:16px;color:var(--ink);letter-spacing:.1em;font-variant-numeric:tabular-nums;flex:none}
+  .wall{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;min-height:0;align-content:center;overflow:hidden}
+  .tile{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.08);cursor:pointer;transition:transform .3s,box-shadow .3s}
+  .tile img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .4s}
+  .tile.on{box-shadow:0 0 0 4px var(--gold),0 12px 30px rgba(0,0,0,.4);transform:scale(1.04);z-index:1}
+  .tile.new::after{content:"NEW";position:absolute;left:8px;top:8px;background:var(--gold);color:#fff;font-size:11px;font-weight:800;padding:3px 7px;border-radius:999px;letter-spacing:.08em}
+  .tile .more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,30,55,.7);font-size:28px;font-weight:800;color:#fff}
+  .empty{grid-column:1/-1;align-self:center;color:var(--muted);font-size:28px;text-align:center}
   /* 결과 발표 */
   #result{position:fixed;inset:0;background:var(--ink-deep);display:none;z-index:5;padding:120px 56px 40px}
   #result.on{display:block}
@@ -50,9 +55,12 @@
   <div class="title">사진 이벤트 <b id="n"></b></div>
 </header>
 
-<div id="show"><div class="empty" id="empty">아직 올라온 사진이 없습니다<br><span style="font-size:20px">QR로 출석 후 사진 이벤트에 참여해 주세요</span></div></div>
-<div class="strip" id="strip"></div>
-<div class="hint">R: 결과 발표 · Esc: 슬라이드로</div>
+<div id="show">
+  <div class="empty" id="empty">아직 올라온 사진이 없습니다<br><span style="font-size:20px">QR로 출석 후 사진 이벤트에 참여해 주세요</span></div>
+  <div class="feat" id="feat"></div>
+  <div class="wall" id="wall"></div>
+</div>
+<div class="hint">R: 결과 발표 · Esc: 슬라이드로 · ←→ 넘김</div>
 
 <div id="result"><h2>인기상 발표</h2><div class="podium" id="podium"></div></div>
 
@@ -67,34 +75,39 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const url = p => /^https?:/.test(p) ? p : sb.storage.from('photos').getPublicUrl(p).data.publicUrl;
 
-let photos = [], idx = -1, last4 = {}, timer;
+let photos = [], idx = -1, last4 = {}, timer, newest = null; const TILES = 12;
 
 async function load(){
   const [ps, at] = await Promise.all([ sb.from('photo_scores').select('*').order('created_at'), sb.from('attendee_public').select('name,last4') ]);
   const fresh = ps.data || [];
   (at.data || []).forEach(a => last4[a.name] = a.last4);   // 작성자 이름 → 뒷자리 (동명이인은 마지막 값)
-  const added = fresh.length > photos.length;
+  const added = fresh.length > photos.length && photos.length > 0;
   photos = fresh;
   $('n').textContent = photos.length ? photos.length + '장' : '';
   $('empty').style.display = photos.length ? 'none' : '';
-  renderStrip();
-  if (added && idx >= 0) jump(photos.length - 1);          // 새 사진은 바로 보여줌
-  if (idx < 0 && photos.length) next();
+  $('feat').style.display = $('wall').style.display = photos.length ? '' : 'none';
+  if (added) { newest = photos[photos.length - 1].id; setTimeout(() => { newest = null; renderWall(); }, 20000); }
+  renderWall();
+  if (added) jump(photos.length - 1);                       // 새 사진은 바로 크게
+  else if (idx < 0 && photos.length) next();
 }
-function renderStrip(){
-  $('strip').innerHTML = photos.slice(-28).map((p, i) => `<img src="${url(p.path)}" data-i="${photos.length - Math.min(28, photos.length) + i}">`).join('');
-  markStrip();
+function renderWall(){
+  const recent = [...photos].reverse();                     // 최신순
+  const show = recent.slice(0, TILES), rest = recent.length - show.length;
+  $('wall').innerHTML = show.map((p, i) => `<div class="tile ${p.id === newest ? 'new' : ''}" data-id="${p.id}"><img src="${url(p.path)}" loading="lazy">
+    ${i === TILES - 1 && rest > 0 ? `<div class="more">+${rest}</div>` : ''}</div>`).join('');
+  markWall();
 }
-function markStrip(){ $('strip').querySelectorAll('img').forEach(im => im.classList.toggle('on', +im.dataset.i === idx)); }
+function markWall(){ const id = photos[idx]?.id; $('wall').querySelectorAll('.tile').forEach(t => t.classList.toggle('on', +t.dataset.id === id)); }
+$('wall').onclick = e => { const t = e.target.closest('.tile'); if (!t) return; const i = photos.findIndex(p => p.id === +t.dataset.id); if (i >= 0) jump(i); };
 function next(){ if (!photos.length) return; jump((idx + 1) % photos.length); }
 function jump(i){
   clearTimeout(timer); idx = i; const p = photos[i];
-  const old = document.querySelector('.slide.on'); if (old) { old.classList.remove('on'); setTimeout(() => old.remove(), 1000); }
-  const s = document.createElement('div'); s.className = 'slide';
-  s.innerHTML = `<div style="position:relative;max-width:100%;max-height:100%;display:grid;place-items:center"><img src="${url(p.path)}">
-    <div class="cap">${esc(p.caption || '')}<small>${last4[p.author] || ''}</small></div></div>`;
-  $('show').appendChild(s); requestAnimationFrame(() => requestAnimationFrame(() => s.classList.add('on')));
-  markStrip(); timer = setTimeout(next, SLIDE_MS);
+  const old = $('feat').querySelector('.frame.on'); if (old) { old.classList.remove('on'); setTimeout(() => old.remove(), 900); }
+  const f = document.createElement('div'); f.className = 'frame';
+  f.innerHTML = `<img src="${url(p.path)}"><div class="label"><span class="c ${p.caption ? '' : 'none'}">${esc(p.caption || '제목 없음')}</span><span class="a">${last4[p.author] || ''}</span></div>`;
+  $('feat').appendChild(f); requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('on')));
+  markWall(); timer = setTimeout(next, SLIDE_MS);
 }
 
 /* ── 결과 발표 ── */
