@@ -36,6 +36,8 @@
   .reel .strip{will-change:transform}
   .reel .cell{height:var(--h);display:grid;place-items:center;font-size:92px;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums}
   .reel.stop{animation:thud .35s cubic-bezier(.2,.9,.3,1.6)}
+  .names.win .reel{cursor:pointer}
+  .names.win .reel:hover{outline:3px solid #fff;outline-offset:4px}
   .reel.win{background:var(--gold);color:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 0 60px rgba(30,194,242,.8)}
   .reel.first{background:#f4c84a;color:#3a2a00;box-shadow:0 0 0 6px rgba(255,255,255,.3),0 0 80px rgba(244,200,74,.9)}
   @keyframes thud{40%{transform:translateY(8px) scale(1.03)}}
@@ -45,7 +47,6 @@
   #cd.on{display:grid}
   #cd span{animation:cd .8s ease-out both}
   @keyframes cd{0%{transform:scale(1.8);opacity:0}30%{opacity:1}100%{transform:scale(.9);opacity:0}}
-  canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:6}
   .snd{position:fixed;right:16px;bottom:12px;font-size:13px;color:var(--muted);background:transparent;border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:8px}
   .ctrl{display:flex;gap:12px;margin-top:10px}
   .ctrl button{padding:16px 34px;font-size:20px;font-weight:700;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
@@ -95,7 +96,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <div id="cd"></div>
-<canvas id="fx"></canvas>
 <button class="snd" id="snd">🔊 사운드 켜짐</button>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -162,15 +162,23 @@ $('prizeSel').onchange = () => {
 
 /* ── 추첨 ── */
 $('btnDraw').onclick = () => draw(current.winner_count);
-$('btnRedraw').onclick = async () => {
-  if (!lastDraw.length) return;
-  const bad = lastDraw.length === 1 ? lastDraw[0] : lastDraw[+prompt('부재자의 전화번호 뒷자리 순서는? (1~' + lastDraw.length + ', 왼쪽부터)') - 1];
-  if (!bad) return;
+async function redraw(bad){
+  if (!bad || busy) return;
+  if (!confirm(`뒷자리 ${bad.last4} 당첨을 부재 처리하고 1명을 다시 뽑을까요?`)) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id });
   const idx = lastDraw.indexOf(bad); $('names').querySelectorAll('.reel')[idx]?.remove();
   lastDraw = lastDraw.filter(x => x !== bad);
   draw(1, true);
+}
+$('btnRedraw').onclick = () => {
+  if (!lastDraw.length) return;
+  if (lastDraw.length === 1) return redraw(lastDraw[0]);
+  toast('부재자의 번호 릴을 클릭하세요');
 };
+$('names').addEventListener('click', e => {           // 당첨 상태에서 릴 클릭 = 그 사람 재추첨
+  const reel = e.target.closest('.reel'); if (!reel || !$('names').classList.contains('win')) return;
+  const idx = [...$('names').querySelectorAll('.reel')].indexOf(reel); redraw(lastDraw[idx]);
+});
 $('btnNext').onclick = () => {
   const i = prizes.findIndex(p => p.id === current.id);
   if (prizes[i + 1]) { $('prizeSel').value = prizes[i + 1].id; $('prizeSel').onchange(); }
@@ -245,8 +253,7 @@ function countdown(){ return new Promise(async res => {
 }); }
 
 /* ── 컨페티 ── */
-let fxConfetti = null;
-try { if (window.confetti) fxConfetti = confetti.create($('fx'), { resize: true, useWorker: true }); } catch (e) { console.warn('confetti 사용 불가', e); }
+const fxConfetti = window.confetti ? (o => confetti({ zIndex: 6, ...o })) : null;
 function celebrate(first){
   if (!fxConfetti) return;
   const colors = first ? ['#f4c84a','#ffffff','#ffe08a','#1EC2F2'] : ['#1EC2F2','#ffffff','#8FE3FF','#00538E'];
