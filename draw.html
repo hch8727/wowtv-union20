@@ -118,7 +118,7 @@ $('gateForm').onsubmit = async e => {
   if (!data) return $('gateErr').textContent = '비밀번호가 틀렸습니다';
   PW = pw; sessionStorage.setItem('union20_pw', pw); $('gate').remove(); init();
 };
-if (PW) sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } });
+if (PW) { $('gate').style.visibility = 'hidden'; sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } else { sessionStorage.removeItem('union20_pw'); PW = ''; $('gate').style.visibility = ''; } }); }
 
 /* ── 데이터 ── */
 async function init(){ await Promise.all([loadPrizes(), refresh()]); setInterval(refresh, 4000); }

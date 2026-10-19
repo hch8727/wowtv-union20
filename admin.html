@@ -138,7 +138,7 @@ $('gateForm').onsubmit = async e => {
   if (!data) return $('gateErr').textContent = '비밀번호가 틀렸습니다';
   PW = $('pw').value; sessionStorage.setItem('union20_pw', PW); $('gate').remove(); init();
 };
-if (PW) sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } });
+if (PW) { $('gate').style.visibility = 'hidden'; sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } else { sessionStorage.removeItem('union20_pw'); PW = ''; $('gate').style.visibility = ''; } }); }
 $('logout').onclick = () => { sessionStorage.removeItem('union20_pw'); location.reload(); };
 
 /* 탭 */
