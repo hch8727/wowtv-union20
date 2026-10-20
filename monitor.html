@@ -10,7 +10,7 @@
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
   body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
-       background-image:radial-gradient(ellipse at 50% 120%,#0a6fb4 0%,var(--ink) 50%,var(--ink-deep) 100%)}
+       background-image:linear-gradient(#1a8fd0 0%,#0b64a6 30%,#00538E 60%,#022c52 100%)}
   .wrap{height:100%;display:grid;grid-template-columns:1fr 360px;grid-template-rows:auto 1fr;gap:0 48px;padding:40px 56px}
   header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
   .brand{width:380px;height:auto;background:#fff;padding:12px 18px;border-radius:12px;box-sizing:content-box}
@@ -128,36 +128,55 @@ const Fish = (() => {
   const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
   const img = new Image(); img.src = 'fish.png'; const AR = 509 / 753, BELLY = { x: .63, y: .72 };      // fish.png: 오른쪽 보는 물고기, 배 위치 비율
   const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; }; size(); addEventListener('resize', size);
-  for (let i = 0; i < 40; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1 + Math.random() * 3, v: .2 + Math.random() * .5, a: Math.random() * 7 });
+  for (let i = 0; i < 45; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1.5 + Math.random() * 5, v: .25 + Math.random() * .6, a: Math.random() * 7 });
   const zones = () => [{ x: W * .37, y: H * .5, rx: W * .27, ry: H * .38 }, { x: W * .85, y: H * .52, rx: W * .14, ry: H * .3 }];   // 카운트·QR 영역은 비켜 다님
   const inZone = (px, py) => zones().some(z => ((px - z.x) / z.rx) ** 2 + ((py - z.y) / z.ry) ** 2 < 1);
   function add(id, l4, fresh){
     if (seen.has(id)) return; seen.add(id);
     const w = 100 + Math.random() * 50; let px = Math.random() * W, py = 60 + Math.random() * (H - 120);
     for (let i = 0; i < 20 && inZone(px, py); i++) { px = Math.random() * W; py = 60 + Math.random() * (H - 120); }
-    F.push({ id, t: l4 || '????', w, x: fresh ? W * .5 : px, y: fresh ? H * .42 : py,
-             vx: (Math.random() < .5 ? -1 : 1) * (.35 + Math.random() * .6), vy: 0, ph: Math.random() * 7,
+    F.push({ id, t: l4 || '????', w, face: 0, x: fresh ? W * .5 : px, y: fresh ? H * .42 : py,
+             vx: (Math.random() < .5 ? -1 : 1) * (.35 + Math.random() * .6), vy: 0, ph: Math.random() * 7, face: 0, tvx: 0,
              hue: Math.random() < .15 ? 160 : Math.random() < .5 ? 0 : -25 + Math.random() * 50, born: fresh ? performance.now() : 0 });
   }
+  const weeds = Array.from({length: 14}, (_, i) => ({ x: (i + .5) / 14, h: 90 + Math.random() * 120, ph: Math.random() * 7, w: 8 + Math.random() * 8 }));
+  function sea(now){
+    // 수면에서 내려오는 빛줄기
+    for (let i = 0; i < 6; i++) { const cx = W * (.1 + i * .16) + Math.sin(now / 4000 + i) * 60, sw = 120 + i * 20;
+      const g = x.createLinearGradient(0, 0, 0, H * .8); g.addColorStop(0, 'rgba(180,230,255,.14)'); g.addColorStop(1, 'rgba(180,230,255,0)');
+      x.fillStyle = g; x.beginPath(); x.moveTo(cx - sw * .3, 0); x.lineTo(cx + sw * .3, 0); x.lineTo(cx + sw + 80, H * .8); x.lineTo(cx - sw + 80, H * .8); x.closePath(); x.fill(); }
+    // 모래 바닥
+    const sg = x.createLinearGradient(0, H - 70, 0, H); sg.addColorStop(0, 'rgba(0,20,45,0)'); sg.addColorStop(1, 'rgba(0,12,30,.9)');
+    x.fillStyle = sg; x.fillRect(0, H - 70, W, 70);
+    // 해초
+    for (const s of weeds) { const bx = s.x * W, sway = Math.sin(now / 1600 + s.ph) * 18;
+      x.beginPath(); x.moveTo(bx, H); x.bezierCurveTo(bx - 10, H - s.h * .4, bx + sway, H - s.h * .7, bx + sway * 1.4, H - s.h);
+      x.lineWidth = s.w; x.lineCap = 'round'; x.strokeStyle = 'rgba(2,40,60,.75)'; x.stroke();
+      x.beginPath(); x.moveTo(bx + 18, H); x.bezierCurveTo(bx + 14, H - s.h * .3, bx + 18 - sway, H - s.h * .5, bx + 18 - sway * 1.2, H - s.h * .7);
+      x.lineWidth = s.w * .6; x.strokeStyle = 'rgba(0,55,75,.6)'; x.stroke(); }
+  }
   function frame(now){
-    x.clearRect(0, 0, W, H);
+    x.clearRect(0, 0, W, H); sea(now);
     for (const b of B) { b.y -= b.v; b.x += Math.sin(b.a += .02) * .3; if (b.y < -5) { b.y = H + 5; b.x = Math.random() * W; }
-      x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(143,227,255,.35)'; x.lineWidth = 1; x.stroke(); }
+      x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(200,240,255,.45)'; x.lineWidth = 1.2; x.stroke(); x.beginPath(); x.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .3, 0, 7); x.fillStyle = 'rgba(255,255,255,.5)'; x.fill(); }
     const zs = zones();
     for (const f of F) {
       f.ph += .035; f.x += f.vx; f.y += Math.sin(f.ph) * .45 + f.vy;
       for (const z of zs) { const dx = (f.x - z.x) / z.rx, dy = (f.y - z.y) / z.ry, d = dx * dx + dy * dy;
         if (d < 1) { f.vy += dy * .09; f.vx += dx * .05; } }
       f.vy *= .96; f.vx = Math.max(-1.3, Math.min(1.3, f.vx));
-      if (Math.random() < .003) f.vx *= -1;
+      if (Math.random() < .003) f.tvx = -Math.sign(f.vx) * (.35 + Math.random() * .6);           // 방향 전환 예약
+      if (f.tvx) { f.vx += (f.tvx - f.vx) * .04; if (Math.abs(f.tvx - f.vx) < .02) f.tvx = 0; }    // 속도는 서서히
+      const want = f.vx < 0 ? -1 : 1; f.face += (want - f.face) * .12;                               // 몸은 돌아서듯
       if (f.x < -f.w) f.x = W + f.w; if (f.x > W + f.w) f.x = -f.w;
       if (f.y < 50) f.vy += .05; if (f.y > H - 50) f.vy -= .05;
       const age = f.born ? Math.min(1, (now - f.born) / 1200) : 1, sc = f.born ? 1 + (1 - age) * 1.6 : 1, alpha = .5 + .5 * age;
-      const w = f.w * sc, h = w * AR, dir = f.vx < 0 ? -1 : 1, tilt = Math.sin(f.ph) * .06 * dir;
+      const w = f.w * sc, h = w * AR, dir = f.face, tilt = Math.sin(f.ph) * .06 * Math.sign(dir || 1);
       x.save(); x.translate(f.x, f.y); x.rotate(tilt); x.globalAlpha = alpha;
-      if (img.complete && img.naturalWidth) { x.save(); x.scale(dir, 1); if (f.hue) x.filter = `hue-rotate(${f.hue}deg)`; x.drawImage(img, -w / 2, -h / 2, w, h); x.restore(); }
+      if (img.complete && img.naturalWidth) { x.save(); x.scale(Math.abs(dir) < .08 ? .08 * Math.sign(dir || 1) : dir, 1); if (f.hue) x.filter = `hue-rotate(${f.hue}deg)`; x.drawImage(img, -w / 2, -h / 2, w, h); x.restore(); }
       // 배 위의 번호 (방향 바뀌어도 글자는 정방향)
       const bx = (BELLY.x - .5) * w * dir, by = (BELLY.y - .5) * h;
+      x.globalAlpha = alpha * Math.min(1, Math.abs(dir) * 2.5);   // 돌아서는 순간엔 숫자도 잠깐 사라짐
       x.font = `800 ${Math.round(w * .11)}px Pretendard, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
       x.lineWidth = Math.max(2, w * .02); x.strokeStyle = 'rgba(255,255,255,.9)'; x.strokeText(f.t, bx, by);
       x.fillStyle = '#1b2a4a'; x.fillText(f.t, bx, by); x.restore();
