@@ -126,7 +126,7 @@ function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l
 /* 8. 어항: 뒷자리 4개가 물고기처럼 헤엄침 + 거품 */
 const Fish = (() => {
   const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
-  const img = new Image(); img.src = 'fish.png'; const AR = 508 / 779, BELLY = { x: .62, y: .73 };      // fish.png: 오른쪽 보는 물고기, 배 위치 비율
+  const img = new Image(); img.src = 'fish.png'; const AR = 509 / 753, BELLY = { x: .63, y: .72 };      // fish.png: 오른쪽 보는 물고기, 배 위치 비율
   const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; }; size(); addEventListener('resize', size);
   for (let i = 0; i < 40; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1 + Math.random() * 3, v: .2 + Math.random() * .5, a: Math.random() * 7 });
   const zones = () => [{ x: W * .37, y: H * .5, rx: W * .27, ry: H * .38 }, { x: W * .85, y: H * .52, rx: W * .14, ry: H * .3 }];   // 카운트·QR 영역은 비켜 다님
