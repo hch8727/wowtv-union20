@@ -50,6 +50,10 @@
   .snav a{color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:8px 16px;border-radius:999px;opacity:.75}
   .snav a:hover{opacity:1;background:rgba(255,255,255,.12)}
   .snav a.cur{opacity:1;background:var(--gold);color:#fff}
+  /* 드래그·선택 방지 */
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+  input,textarea{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -137,7 +141,9 @@ const Fish = (() => {
   };
   for (const k in SP) { SP[k].img = new Image(); SP[k].img.src = SP[k].src; }
   const pick = () => { let r = Math.random() * 100; for (const k in SP) { r -= SP[k].p; if (r <= 0) return k; } return 'fish'; };
-  const FLOOR = 70;
+  const FLOOR = 70; const M = { x: -9999, y: -9999, t: 0 };
+  addEventListener('mousemove', e => { M.x = e.clientX; M.y = e.clientY; M.t = performance.now(); });
+  addEventListener('mouseleave', () => { M.x = M.y = -9999; });
   const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; }; size(); addEventListener('resize', size);
   for (let i = 0; i < 45; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1.5 + Math.random() * 5, v: .25 + Math.random() * .6, a: Math.random() * 7 });
   const zones = () => [{ x: W * .37, y: H * .5, rx: W * .27, ry: H * .38 }, { x: W * .85, y: H * .52, rx: W * .14, ry: H * .3 }];   // 카운트·QR 영역은 비켜 다님
@@ -168,11 +174,17 @@ const Fish = (() => {
     x.clearRect(0, 0, W, H); sea(now);
     for (const b of B) { b.y -= b.v; b.x += Math.sin(b.a += .02) * .3; if (b.y < -5) { b.y = H + 5; b.x = Math.random() * W; }
       x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(200,240,255,.45)'; x.lineWidth = 1.2; x.stroke(); x.beginPath(); x.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .3, 0, 7); x.fillStyle = 'rgba(255,255,255,.5)'; x.fill(); }
-    const zs = zones();
+    const zs = zones(); const mouseOn = now - M.t < 2500;        // 마우스가 멈춘 지 2.5초 지나면 무시
     // 바닥 생물이 앞에 오도록 정렬
     F.sort((a, b) => (SP[a.k].mode === 'walk') - (SP[b.k].mode === 'walk'));
     for (const f of F) {
       const s = SP[f.k]; f.ph += .035;
+      if (mouseOn) {                                            // 마우스 가까이 오면 놀라서 달아남
+        const dx = f.x - M.x, dy = f.y - M.y, d2 = dx * dx + dy * dy, R = 220;
+        if (d2 < R * R) { const d = Math.sqrt(d2) || 1, k = (1 - d / R) * .9;
+          if (s.mode === 'walk') { f.vx += (dx / d) * k * 1.2; f.tvx = 0; }
+          else { f.vx += (dx / d) * k; if (s.mode === 'swim') f.vy += (dy / d) * k; else f.ty += (dy / d) * k * 6; f.tvx = 0; } }
+      }
       if (s.mode === 'swim') {
         f.x += f.vx; f.y += Math.sin(f.ph) * .45 + f.vy;
         for (const z of zs) { const dx = (f.x - z.x) / z.rx, dy = (f.y - z.y) / z.ry; if (dx * dx + dy * dy < 1) { f.vy += dy * .09; f.vx += dx * .05; } }
@@ -184,13 +196,15 @@ const Fish = (() => {
         f.ty += (Math.random() - .5) * .3; f.ty = Math.max(H * s.zone[0], Math.min(H * s.zone[1], f.ty));
         if (inZone(f.x, f.ty)) f.ty -= .8;
       } else if (s.mode === 'hover') {                        // 해마: 낮은 곳에서 살랑살랑
-        f.x += f.vx * .5; f.y = f.ty + Math.sin(f.ph * 1.3) * 10; if (Math.random() < .003) f.tvx = -Math.sign(f.vx) * f.spd;
+        f.x += f.vx * .5; f.ty = Math.max(H * s.zone[0], Math.min(H * s.zone[1], f.ty)); f.y = f.ty + Math.sin(f.ph * 1.3) * 10; if (Math.random() < .003) f.tvx = -Math.sign(f.vx) * f.spd;
       } else {                                                 // 문어·꽃게: 바닥을 기어다님
         f.x += f.vx; f.y = f.ty + Math.abs(Math.sin(f.ph * (f.k === 'crab' ? 4 : 1.2))) * (f.k === 'crab' ? 3 : 6);
         if (Math.random() < .006) f.tvx = -Math.sign(f.vx) * f.spd;
         if (Math.random() < .004) f.vx = 0, f.tvx = (Math.random() < .5 ? -1 : 1) * f.spd;   // 가끔 멈칫
       }
       if (f.tvx) { f.vx += (f.tvx - f.vx) * .04; if (Math.abs(f.tvx - f.vx) < .02) f.tvx = 0; }
+      else if (Math.abs(f.vx) > f.spd * 1.05) f.vx *= .985;                                    // 놀란 뒤 제 속도로 복귀
+      if (s.mode === 'walk') f.vx = Math.max(-2.2, Math.min(2.2, f.vx)); else if (s.mode !== 'swim') f.vx = Math.max(-1.5, Math.min(1.5, f.vx));
       if (f.x < -f.w) f.x = W + f.w; if (f.x > W + f.w) f.x = -f.w;
       let dir = 1;
       if (s.faces) { const want = (f.vx < 0 ? -1 : 1) * s.faces; f.face += (want - f.face) * .12; dir = f.face; }
