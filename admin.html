@@ -102,7 +102,8 @@
         <button id="pSave" class="primary">추가</button><button id="pCancel" style="display:none">취소</button>
       </div>
       <div class="bar" style="margin:10px 0 0">
-        <input id="pImg" placeholder="상품 이미지 URL (선택) — 리포에 올린 파일이면 images/노트북.png 처럼 상대경로도 가능" style="flex:1">
+        <input id="pImg" placeholder="상품 이미지 URL (선택)" style="flex:1">
+        <label style="cursor:pointer"><input type="file" id="pFile" accept="image/*" style="display:none"><span class="btn-like" id="pFileBtn" style="display:inline-block;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px">파일 업로드</span></label>
         <img id="pImgPrev" alt="" style="height:44px;width:auto;border-radius:6px;background:#eef3f8;display:none">
       </div>
     </div>
@@ -245,6 +246,16 @@ $('pSave').onclick = async () => {
   resetPrizeForm(); loadPrizes();
 };
 $('pCancel').onclick = resetPrizeForm;
+$('pFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (f.size > 5 * 1024 * 1024) return toast('5MB 이하 이미지만 올릴 수 있습니다');
+  $('pFileBtn').textContent = '업로드 중…';
+  const ext = (f.name.split('.').pop() || 'png').toLowerCase(), path = `${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from('prizes').upload(path, f, { contentType: f.type, upsert: false });
+  $('pFileBtn').textContent = '파일 업로드'; e.target.value = '';
+  if (error) return toast('업로드 실패: ' + error.message);
+  $('pImg').value = sb.storage.from('prizes').getPublicUrl(path).data.publicUrl; $('pImg').oninput(); toast('업로드했습니다. 저장을 눌러 반영하세요');
+};
 $('pImg').oninput = () => { const v = $('pImg').value.trim(), im = $('pImgPrev'); im.style.display = v ? '' : 'none'; if (v) im.src = v; };
 function resetPrizeForm(){ editId = null; ['pOrder','pRank','pName','pImg'].forEach(i => $(i).value = ''); $('pImgPrev').style.display = 'none'; $('pCount').value = 1; $('pSave').textContent = '추가'; $('pCancel').style.display = 'none'; }
 $('prizeBody').onclick = async e => {
