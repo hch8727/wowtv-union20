@@ -51,7 +51,8 @@
   .snav a:hover{opacity:1;background:rgba(255,255,255,.12)}
   .snav a.cur{opacity:1;background:var(--gold);color:#fff}
   /* 드래그·선택 방지 */
-  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:none}
+  .snav a{cursor:pointer}
   img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
   input,textarea{-webkit-user-select:text;user-select:text}
 </style>
@@ -219,7 +220,24 @@ const Fish = (() => {
       x.lineWidth = Math.max(2, w * .02); x.strokeStyle = 'rgba(255,255,255,.9)'; x.strokeText(f.t, bx, by);
       x.fillStyle = '#1b2a4a'; x.fillText(f.t, bx, by); x.restore();
     }
+    hook(now, mouseOn);
     requestAnimationFrame(frame);
+  }
+  /* 커서 = 낚싯바늘 */
+  let hookA = 0;
+  function hook(now, on){
+    hookA += ((on && M.x > 0) ? 1 : 0) - hookA > 0 ? .08 : -.05; hookA = Math.max(0, Math.min(1, hookA));
+    if (hookA <= 0) return;
+    const sw = Math.sin(now / 900) * 6, hx = M.x + sw, hy = M.y;
+    x.save(); x.globalAlpha = hookA;
+    x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(M.x, 0); x.quadraticCurveTo(M.x, hy * .6, hx, hy - 10); x.stroke();   // 낚싯줄
+    x.translate(hx, hy); x.rotate(sw * .02);
+    x.lineWidth = 5; x.lineCap = 'round'; x.strokeStyle = '#e9eef5';
+    x.beginPath(); x.moveTo(0, -12); x.lineTo(0, 18); x.arc(-10, 18, 10, 0, Math.PI, false); x.lineTo(-20, 6); x.stroke();      // 바늘
+    x.beginPath(); x.moveTo(-20, 6); x.lineTo(-25, 12); x.stroke();                                                               // 미늘
+    x.fillStyle = '#e9eef5'; x.beginPath(); x.arc(0, -12, 4, 0, 7); x.fill();                                                     // 매듭
+    x.fillStyle = '#ff6b6b'; x.beginPath(); x.ellipse(-3, 4, 7, 5, .4, 0, 7); x.fill();                                           // 미끼
+    x.restore();
   }
   requestAnimationFrame(frame);
   return { add };
