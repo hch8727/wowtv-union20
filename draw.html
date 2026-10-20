@@ -91,7 +91,10 @@
   #stItem{position:absolute;left:50%;bottom:11%;z-index:5;text-align:center;opacity:0;transform:translate(-50%,0) scale(.3);
           transition:transform 1.3s cubic-bezier(.2,.9,.3,1.08) 1s,opacity .8s 1s,left 1.3s cubic-bezier(.2,.9,.3,1.08) 1s;pointer-events:none}
   #stage.open #stItem{opacity:1;transform:translate(-50%,0) scale(1)}
-  #stItem img{max-width:min(46vw,760px);max-height:48vh;filter:drop-shadow(0 30px 60px rgba(0,0,0,.75)) drop-shadow(0 0 40px rgba(255,215,120,.35))}
+  #stItem img{max-width:min(46vw,760px);max-height:48vh;filter:brightness(0) drop-shadow(0 0 30px rgba(30,194,242,.6));transition:filter 1.5s ease 2.3s}
+  #stage.open.lit #stItem img{filter:brightness(1) drop-shadow(0 30px 60px rgba(0,0,0,.75)) drop-shadow(0 0 40px rgba(255,215,120,.35))}
+  #stItem .t{opacity:0;transition:opacity .8s 3.2s}
+  #stage.open.lit #stItem .t{opacity:1}
   #stItem .t{margin-top:22px;font-size:44px;font-weight:800;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.7)}
   #stItem .t b{display:inline-block;background:linear-gradient(#f7d774,#d9a826);color:#3a2600;border-radius:12px;padding:2px 18px;margin-right:14px;font-size:34px;vertical-align:middle}
   #stage .burst{position:absolute;z-index:3;width:0;height:0;border-radius:50%;left:0;top:0;pointer-events:none;opacity:0}
@@ -104,7 +107,7 @@
   #stage.open .rays{animation:rays 18s linear infinite}
   #stage .sp{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 12px 4px rgba(255,230,150,.9);pointer-events:none;z-index:5}
   #stItem{animation:none}
-  #stage.open #stItem img{animation:float 3.2s ease-in-out 2.3s infinite alternate}
+  #stage.open #stItem img{animation:float 3.2s ease-in-out 1.6s infinite alternate}
   @keyframes float{from{transform:translateY(0) rotate(-1.2deg)}to{transform:translateY(-16px) rotate(1.2deg)}}
   #stage.open .dimmer{opacity:1}
   #stage .dimmer{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity 1s .8s;z-index:4;pointer-events:none}
@@ -215,6 +218,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 let PW = sessionStorage.getItem('union20_pw') || '';
 let prizes = [], people = [], winners = [], current = null, lastDraw = [], busy = false;
+const introduced = new Set(JSON.parse(sessionStorage.getItem('union20_intro') || '[]'));
+const isIntro = p => p && introduced.has(p.id);
+const pname = p => isIntro(p) ? esc(p.name) : '<span style="letter-spacing:.2em;opacity:.7">???</span>';
 
 /* ── 로그인 ── */
 $('gateForm').onsubmit = async e => {
@@ -230,8 +236,10 @@ if (PW) { $('gate').style.visibility = 'hidden'; sb.rpc('admin_login', { pw: PW 
 async function init(){ await Promise.all([loadPrizes(), refresh()]); setInterval(refresh, 4000); }
 async function loadPrizes(){
   prizes = (await sb.from('prizes').select('*').order('draw_order')).data || [];
+  const keep = $('prizeSel').value;
   $('prizeSel').innerHTML = '<option value="">상품 선택</option>' +
-    prizes.map(p => `<option value="${p.id}">${p.rank}등 · ${esc(p.name)}</option>`).join('');
+    prizes.map(p => `<option value="${p.id}">${p.rank}등${isIntro(p) ? ' · ' + esc(p.name) : ' · ???'}</option>`).join('');
+  if (keep) $('prizeSel').value = keep;
   if (!prizes.length) toast('prizes 테이블에 상품을 먼저 등록하세요');
 }
 async function refresh(){
@@ -251,10 +259,10 @@ function renderPrize(){
   if (!current || busy) return;                       // 추첨 중엔 결과를 미리 노출하지 않음
   const mine = winners.filter(w => w.prize_id === current.id);
   const done = mine.filter(w => !w.cancelled).length, total = current.winner_count;
-  $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${esc(current.name)}<span class="cnt">${done} / ${total}명</span>`;
+  $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${pname(current)}<span class="cnt">${done} / ${total}명</span>`;
   $('prev').innerHTML = mine.map(w => `<span class="${w.cancelled ? 'cx' : ''}">${l4Of(w.attendee_id)}</span>`).join('');
-  const full = done >= total;
-  $('btnDraw').disabled = busy || full; $('btnDraw').textContent = full ? '추첨 완료' : (done ? `${done + 1}번째 추첨` : '추첨');
+  const full = done >= total, locked = !isIntro(current);
+  $('btnDraw').disabled = busy || full || locked; $('btnDraw').textContent = full ? '추첨 완료' : locked ? '상품 소개 먼저' : (done ? `${done + 1}번째 추첨` : '추첨');
 }
 function renderLog(){
   if (busy) return;
@@ -271,7 +279,7 @@ $('log').onclick = async e => {
 /* ── 상품 선택 ── */
 $('prizeSel').onchange = () => {
   current = prizeOf(+$('prizeSel').value); if (!current.id) current = null;
-  $('prizeTitle').innerHTML = current ? `<b>${current.rank}등</b>${esc(current.name)}` : '상품을 선택하세요';
+  $('prizeTitle').innerHTML = current ? `<b>${current.rank}등</b>${pname(current)}` : '상품을 선택하세요';
   $('names').innerHTML = '<span class="hint">스페이스바 또는 추첨 버튼 · 전화번호 뒷자리로 표시됩니다</span>'; $('names').className = 'names';
   $('win').className = ''; $('prev').innerHTML = ''; lastDraw = [];
   $('btnDraw').disabled = !current; $('btnDraw').textContent = '추첨'; $('btnRedraw').disabled = true; $('btnNext').disabled = !current;
@@ -296,12 +304,14 @@ function openStage(){
   renderDoors();
   $('stItem').innerHTML = `${current.image_url ? `<img src="${esc(current.image_url)}">` : ''}<div class="t"><b>${current.rank}등</b>${esc(current.name)}</div>`;
   $('stBurst').classList.remove('on'); $('stRays').style.left = $('stRays').style.top = '';   // 지난 연출 잔상 제거
-  stage.classList.remove('open'); stage.classList.add('on');
+  stage.classList.remove('open', 'lit'); stage.classList.add('on');
   const door = $('doors').querySelector(`.dr[data-id="${current.id}"]`);
   if (door) { const r = door.getBoundingClientRect(); $('stItem').style.transition = 'none'; $('stItem').style.left = (r.left + r.width / 2) + 'px'; void $('stItem').offsetWidth; $('stItem').style.transition = ''; }
   setTimeout(() => { door?.classList.add('open'); Snd.doors(); }, 700);          // 무대 전경을 잠깐 보여준 뒤 커튼 개방
   setTimeout(() => {
-    stage.classList.add('open'); $('stItem').style.left = '50%'; Snd.reveal(current.rank === 1);
+    stage.classList.add('open', 'lit'); $('stItem').style.left = '50%';
+    setTimeout(() => { Snd.reveal(current.rank === 1); sparkles(innerWidth / 2, innerHeight * .5, 30); }, 2300);   // 실루엣 → 밝아지는 순간
+    introduced.add(current.id); sessionStorage.setItem('union20_intro', JSON.stringify([...introduced])); loadPrizes(); renderPrize();
     if (door) { const r = door.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * .45;
       const bu = $('stBurst'); bu.style.left = cx + 'px'; bu.style.top = cy + 'px'; bu.classList.remove('on'); void bu.offsetWidth; bu.classList.add('on');
       $('stRays').style.left = cx + 'px'; $('stRays').style.top = cy + 'px';
@@ -321,7 +331,7 @@ function sparkles(cx, cy, n){
 }
 function closeStage(){
   if (!stage.classList.contains('on')) return;
-  stage.classList.remove('open'); $('doors').querySelectorAll('.dr.open').forEach(d => d.classList.remove('open')); $('stBurst').classList.remove('on'); Snd.doors();
+  stage.classList.remove('open', 'lit'); $('doors').querySelectorAll('.dr.open').forEach(d => d.classList.remove('open')); $('stBurst').classList.remove('on'); Snd.doors();
   setTimeout(() => stage.classList.remove('on'), 1500);
 }
 $('btnIntro').onclick = openStage;
