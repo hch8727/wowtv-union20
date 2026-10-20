@@ -179,7 +179,7 @@ async function refresh(){
 const l4Of = id => (people.find(p => p.id === id) || {}).last4 || '????';
 const prizeOf = id => prizes.find(p => p.id === id) || {};
 function renderPrize(){
-  if (!current) return;
+  if (!current || busy) return;                       // 추첨 중엔 결과를 미리 노출하지 않음
   const mine = winners.filter(w => w.prize_id === current.id);
   const done = mine.filter(w => !w.cancelled).length, total = current.winner_count;
   $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${esc(current.name)}<span class="cnt">${done} / ${total}명</span>`;
@@ -188,6 +188,7 @@ function renderPrize(){
   $('btnDraw').disabled = busy || full; $('btnDraw').textContent = full ? '추첨 완료' : (done ? `${done + 1}번째 추첨` : '추첨');
 }
 function renderLog(){
+  if (busy) return;
   $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
     <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)}</s>` : l4Of(w.attendee_id)}</span>
     ${w.cancelled ? '' : `<button data-c="${w.id}">취소</button>`}</div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
