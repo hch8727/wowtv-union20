@@ -295,6 +295,7 @@ function openStage(){
   if (!current) return;
   renderDoors();
   $('stItem').innerHTML = `${current.image_url ? `<img src="${esc(current.image_url)}">` : ''}<div class="t"><b>${current.rank}등</b>${esc(current.name)}</div>`;
+  $('stBurst').classList.remove('on'); $('stRays').style.left = $('stRays').style.top = '';   // 지난 연출 잔상 제거
   stage.classList.remove('open'); stage.classList.add('on');
   const door = $('doors').querySelector(`.dr[data-id="${current.id}"]`);
   if (door) { const r = door.getBoundingClientRect(); $('stItem').style.transition = 'none'; $('stItem').style.left = (r.left + r.width / 2) + 'px'; void $('stItem').offsetWidth; $('stItem').style.transition = ''; }
@@ -320,7 +321,7 @@ function sparkles(cx, cy, n){
 }
 function closeStage(){
   if (!stage.classList.contains('on')) return;
-  stage.classList.remove('open'); $('doors').querySelectorAll('.dr.open').forEach(d => d.classList.remove('open')); Snd.doors();
+  stage.classList.remove('open'); $('doors').querySelectorAll('.dr.open').forEach(d => d.classList.remove('open')); $('stBurst').classList.remove('on'); Snd.doors();
   setTimeout(() => stage.classList.remove('on'), 1500);
 }
 $('btnIntro').onclick = openStage;
