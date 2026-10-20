@@ -351,11 +351,13 @@ function makeReel(){
       strip.style.transform = `translateY(${-y}px)`; raf = requestAnimationFrame(spin); })();
     return { col, stop(d){ return new Promise(res => {
       running = false; cancelAnimationFrame(raf);
-      const cells = Array.from({length: 12}, () => `<div class="cell">${Math.random() * 10 | 0}</div>`); cells.push(`<div class="cell">${d}</div>`);
-      strip.innerHTML = cells.join(''); strip.style.transform = 'translateY(0)';
-      const target = -H * (cells.length - 1), t0 = performance.now(), D = 900;
+      const y0 = y % H;                                            // 지금 칸 안에서 걸쳐 있는 위치를 그대로 이어받음
+      const topCell = strip.children[Math.floor(y / H) % strip.children.length]?.textContent ?? (Math.random() * 10 | 0);
+      const cells = [`<div class="cell">${topCell}</div>`, ...Array.from({length: 11}, () => `<div class="cell">${Math.random() * 10 | 0}</div>`), `<div class="cell">${d}</div>`];
+      strip.innerHTML = cells.join(''); strip.style.transform = `translateY(${-y0}px)`;
+      const target = -H * (cells.length - 1), dist = target + y0, t0 = performance.now(), D = 1000;
       (function ease(t){ const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3);
-        strip.style.transform = `translateY(${target * e}px)`; k < 1 ? requestAnimationFrame(ease) : res(); })(t0);
+        strip.style.transform = `translateY(${-y0 + dist * e}px)`; k < 1 ? requestAnimationFrame(ease) : res(); })(t0);
     }); } };
   });
   return { el, async stopAt(val, delay){
