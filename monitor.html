@@ -181,7 +181,7 @@ const Fish = (() => {
     for (const f of F) {
       const s = SP[f.k]; f.ph += .035;
       if (mouseOn) {                                            // 마우스 가까이 오면 놀라서 달아남
-        const dx = f.x - M.x, dy = f.y - M.y, d2 = dx * dx + dy * dy, R = 220;
+        const dx = f.x - (hk.init ? hk.x : M.x), dy = f.y - (hk.init ? hk.y : M.y), d2 = dx * dx + dy * dy, R = 220;
         if (d2 < R * R) { const d = Math.sqrt(d2) || 1, k = (1 - d / R) * .9;
           if (s.mode === 'walk') { f.vx += (dx / d) * k * 1.2; f.tvx = 0; }
           else { f.vx += (dx / d) * k; if (s.mode === 'swim') f.vy += (dy / d) * k; else f.ty += (dy / d) * k * 6; f.tvx = 0; } }
@@ -223,20 +223,33 @@ const Fish = (() => {
     hook(now, mouseOn);
     requestAnimationFrame(frame);
   }
-  /* 커서 = 낚싯바늘 */
-  let hookA = 0;
+  /* 커서 = 낚싯바늘 (줄은 로프 물리, 바늘은 관성으로 따라옴) */
+  let hookA = 0; const hk = { x: 0, y: 0, vx: 0, vy: 0, init: false }; const N = 16; let rope = null;
   function hook(now, on){
     hookA += ((on && M.x > 0) ? 1 : 0) - hookA > 0 ? .08 : -.05; hookA = Math.max(0, Math.min(1, hookA));
-    if (hookA <= 0) return;
-    const sw = Math.sin(now / 900) * 6, hx = M.x + sw, hy = M.y;
+    if (hookA <= 0) { hk.init = false; return; }
+    if (!hk.init) { hk.x = M.x; hk.y = M.y; hk.vx = hk.vy = 0; hk.init = true; rope = Array.from({length: N + 1}, (_, i) => ({ x: M.x, y: M.y * i / N, px: M.x, py: M.y * i / N })); }
+    // 바늘: 마우스를 스프링으로 따라감 (물속이라 묵직하게)
+    hk.vx += (M.x - hk.x) * .06; hk.vy += (M.y - hk.y) * .06; hk.vx *= .82; hk.vy *= .82; hk.x += hk.vx; hk.y += hk.vy;
+    // 줄: verlet 로프, 위쪽 끝은 마우스 x 위 화면 밖, 아래 끝은 바늘
+    const ax = M.x, ay = -10, seg = Math.max(8, Math.hypot(hk.x - ax, hk.y - ay) / N);
+    for (let i = 1; i < N; i++) { const p = rope[i], vx = (p.x - p.px) * .96, vy = (p.y - p.py) * .96; p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + .25; }
+    rope[0].x = ax; rope[0].y = ay; rope[N].x = hk.x; rope[N].y = hk.y - 14;
+    for (let k = 0; k < 6; k++) for (let i = 0; i < N; i++) {
+      const a = rope[i], b = rope[i + 1]; let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 1, diff = (d - seg) / d * .5;
+      if (i !== 0) { a.x += dx * diff; a.y += dy * diff; } if (i + 1 !== N) { b.x -= dx * diff; b.y -= dy * diff; }
+    }
     x.save(); x.globalAlpha = hookA;
-    x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(M.x, 0); x.quadraticCurveTo(M.x, hy * .6, hx, hy - 10); x.stroke();   // 낚싯줄
-    x.translate(hx, hy); x.rotate(sw * .02);
+    x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 1.5; x.lineJoin = 'round'; x.beginPath(); x.moveTo(rope[0].x, rope[0].y);
+    for (let i = 1; i <= N; i++) { const p = rope[i - 1], q = rope[i]; x.quadraticCurveTo(p.x, p.y, (p.x + q.x) / 2, (p.y + q.y) / 2); } x.lineTo(rope[N].x, rope[N].y); x.stroke();
+    // 바늘: 움직이는 방향으로 기울고, 멈추면 살짝 흔들림
+    const tilt = Math.max(-.5, Math.min(.5, hk.vx * .04)) + Math.sin(now / 700) * .04;
+    x.translate(hk.x, hk.y); x.rotate(tilt);
     x.lineWidth = 5; x.lineCap = 'round'; x.strokeStyle = '#e9eef5';
-    x.beginPath(); x.moveTo(0, -12); x.lineTo(0, 18); x.arc(-10, 18, 10, 0, Math.PI, false); x.lineTo(-20, 6); x.stroke();      // 바늘
-    x.beginPath(); x.moveTo(-20, 6); x.lineTo(-25, 12); x.stroke();                                                               // 미늘
-    x.fillStyle = '#e9eef5'; x.beginPath(); x.arc(0, -12, 4, 0, 7); x.fill();                                                     // 매듭
-    x.fillStyle = '#ff6b6b'; x.beginPath(); x.ellipse(-3, 4, 7, 5, .4, 0, 7); x.fill();                                           // 미끼
+    x.beginPath(); x.moveTo(0, -12); x.lineTo(0, 18); x.arc(-10, 18, 10, 0, Math.PI, false); x.lineTo(-20, 6); x.stroke();
+    x.beginPath(); x.moveTo(-20, 6); x.lineTo(-25, 12); x.stroke();
+    x.fillStyle = '#e9eef5'; x.beginPath(); x.arc(0, -12, 4, 0, 7); x.fill();
+    x.fillStyle = '#ff6b6b'; x.beginPath(); x.ellipse(-3, 4, 7, 5, .4, 0, 7); x.fill();
     x.restore();
   }
   requestAnimationFrame(frame);
