@@ -20,10 +20,6 @@
   .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4);transform-origin:center}
   @keyframes bump{30%{transform:scale(1.06);color:var(--gold-soft)}}
   .unit{font-size:40px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:1.1em}
-  .recent{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:900px;min-height:52px}
-  .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:10px 22px;font-size:24px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums;animation:slide .4s ease-out}
-  .chip:first-child{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:800}
-  @keyframes slide{from{opacity:0;transform:translateY(10px)}}
   /* 6. 출석 순간 연출 */
   #pop{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:200px;font-weight:900;letter-spacing:.06em;color:#fff;
        text-shadow:0 0 40px rgba(30,194,242,.9),0 0 90px rgba(30,194,242,.6);pointer-events:none;opacity:0;z-index:4}
@@ -68,7 +64,6 @@
   <section class="stage">
     <div class="label">지금까지 출석하신 분</div>
     <div class="countRow"><span class="count" id="count">0</span><span class="unit">명</span></div>
-    <div class="recent" id="recent"></div>
   </section>
 
   <aside>
@@ -87,7 +82,9 @@ const CHECKIN_URL = location.href.replace(/monitor\.html.*$/, 'checkin.html'); /
 const POLL_MS = 2500, RECENT_N = 8;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const $count = document.getElementById('count'), $recent = document.getElementById('recent'), $status = document.getElementById('status');
+const $count = document.getElementById('count'), $status = document.getElementById('status');
+let fishLoaded = false;
+async function loadAllFish(){ const { data } = await sb.from('attendee_public').select('id,last4').order('checked_in_at'); (data || []).forEach(r => Fish.add(r.id, r.last4, false)); }
 new QRCode(document.getElementById('qr'), { text: CHECKIN_URL, width: 264, height: 264, correctLevel: QRCode.CorrectLevel.M });
 
 let last = -1, lastIds = new Set();
@@ -96,6 +93,7 @@ async function tick(){
   const { data, error } = await sb.from('attendee_public')
     .select('id,last4,checked_in_at', { count: 'exact' })
     .order('checked_in_at', { ascending: false }).limit(RECENT_N);
+  if (!fishLoaded) { fishLoaded = true; loadAllFish(); }
   if (error) { $status.textContent = '연결 오류: ' + error.message; $status.className = 'status'; return; }
   $status.textContent = '실시간 반영 중'; $status.className = 'status live';
 
@@ -107,8 +105,7 @@ async function tick(){
   }
   const ids = data.map(r => r.id).join();
   if (ids !== [...lastIds].join()) {
-    if (lastIds.size) { const fresh = data.filter(r => !lastIds.has(r.id)).reverse(); fresh.forEach((r, i) => setTimeout(() => popIn(r.last4), i * 700)); }
-    $recent.innerHTML = data.map(r => `<span class="chip">${r.last4 || '????'}</span>`).join('');
+    if (lastIds.size) { const fresh = data.filter(r => !lastIds.has(r.id)).reverse(); fresh.forEach((r, i) => setTimeout(() => { popIn(r.last4); Fish.add(r.id, r.last4, true); }, i * 700)); }
     lastIds = new Set(data.map(r => r.id));
   }
 }
@@ -126,22 +123,44 @@ function setCount(n){
 }
 /* 6. 출석 순간 연출 */
 function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l4 || '????'}<small>출석 완료</small>`; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
-/* 8. 떠다니는 빛 입자 */
-(function particles(){
-  const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H, P = [];
-  const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; };
-  size(); addEventListener('resize', size);
-  for (let i = 0; i < 70; i++) P.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1 + Math.random() * 3, vx: (Math.random() - .5) * .25, vy: -.15 - Math.random() * .35, a: Math.random() * Math.PI * 2 });
-  (function frame(){
+/* 8. 어항: 뒷자리 4개가 물고기처럼 헤엄침 + 거품 */
+const Fish = (() => {
+  const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
+  const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; }; size(); addEventListener('resize', size);
+  for (let i = 0; i < 40; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1 + Math.random() * 3, v: .2 + Math.random() * .5, a: Math.random() * 7 });
+  const avoid = () => ({ x: W * .37, y: H * .5, rx: W * .26, ry: H * .36 });     // 가운데 카운트 영역은 비켜 다님
+  function add(id, l4, fresh){
+    if (seen.has(id)) return; seen.add(id);
+    const s = 18 + Math.random() * 10;
+    F.push({ id, t: l4 || '????', s, x: fresh ? W * .5 : Math.random() * W, y: fresh ? H * .42 : Math.random() * H,
+             vx: (Math.random() < .5 ? -1 : 1) * (.4 + Math.random() * .7), vy: 0, ph: Math.random() * 7, hue: Math.random() < .15 ? 45 : 195, born: fresh ? performance.now() : 0 });
+  }
+  function frame(now){
     x.clearRect(0, 0, W, H);
-    for (const p of P) {
-      p.x += p.vx; p.y += p.vy; p.a += .02; if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
-      const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-      g.addColorStop(0, `rgba(143,227,255,${.35 + Math.sin(p.a) * .25})`); g.addColorStop(1, 'rgba(143,227,255,0)');
-      x.fillStyle = g; x.beginPath(); x.arc(p.x, p.y, p.r * 4, 0, 7); x.fill();
+    for (const b of B) { b.y -= b.v; b.x += Math.sin(b.a += .02) * .3; if (b.y < -5) { b.y = H + 5; b.x = Math.random() * W; }
+      x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(143,227,255,.35)'; x.lineWidth = 1; x.stroke(); }
+    const av = avoid();
+    for (const f of F) {
+      f.ph += .04; f.x += f.vx; f.y += Math.sin(f.ph) * .5 + f.vy;
+      const dx = (f.x - av.x) / av.rx, dy = (f.y - av.y) / av.ry, d = dx * dx + dy * dy;   // 중앙 타원 회피
+      if (d < 1) { f.vy += dy * .06; f.vx += dx * .03; }
+      f.vy *= .96; f.vx = Math.max(-1.4, Math.min(1.4, f.vx));
+      if (Math.random() < .004) f.vx *= -1;
+      if (f.x < -80) { f.x = W + 80; } if (f.x > W + 80) { f.x = -80; }
+      if (f.y < 40) f.vy += .05; if (f.y > H - 40) f.vy -= .05;
+      const age = f.born ? Math.min(1, (now - f.born) / 1200) : 1, sc = f.born ? 1 + (1 - age) * 2.2 : 1, alpha = .55 + .45 * age;
+      x.save(); x.translate(f.x, f.y); x.scale(sc, sc); if (f.vx < 0) x.scale(-1, 1);
+      x.font = `700 ${f.s}px Pretendard, sans-serif`; const w = x.measureText(f.t).width + 26;
+      x.fillStyle = `hsla(${f.hue},85%,60%,${.18 * alpha})`; x.strokeStyle = `hsla(${f.hue},85%,70%,${.6 * alpha})`; x.lineWidth = 1.2;
+      x.beginPath(); x.roundRect(-w / 2, -f.s * .8, w, f.s * 1.6, f.s); x.fill(); x.stroke();           // 몸통
+      x.beginPath(); x.moveTo(w / 2 - 2, 0); x.lineTo(w / 2 + f.s * .6, -f.s * .5 + Math.sin(f.ph * 3) * 3); x.lineTo(w / 2 + f.s * .6, f.s * .5 + Math.sin(f.ph * 3) * 3); x.closePath(); x.fill();   // 꼬리
+      if (f.vx < 0) x.scale(-1, 1);
+      x.fillStyle = `rgba(255,255,255,${alpha})`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(f.t, 0, 1); x.restore();
     }
     requestAnimationFrame(frame);
-  })();
+  }
+  requestAnimationFrame(frame);
+  return { add };
 })();
 
 setCount(0); tick(); setInterval(tick, POLL_MS);
