@@ -500,10 +500,15 @@ function celebrate(first){
 const Snd = (() => {
   let ctx, on = true, roll, this_hb;
   // 같은 폴더에 mp3가 있으면 파일 재생, 없으면 합성음 (fanfare.mp3 / fanfare_first.mp3 / drumroll.mp3)
-  const files = {}; ['fanfare', 'fanfare_first', 'drumroll'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
+  const files = {}; ['fanfare', 'fanfare_first'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
     a.addEventListener('canplaythrough', () => { files[n] = a; }, { once: true }); a.addEventListener('error', () => {}, { once: true }); });
   const play = (n, vol = 1) => { const a = files[n]; if (!a || !on) return false; a.currentTime = 0; a.volume = vol; a.play().catch(() => {}); return true; };
   const stop = n => { const a = files[n]; if (a) { a.pause(); a.currentTime = 0; } };
+  // 드럼롤은 반복 경계가 안 들리도록 Web Audio 버퍼로 재생
+  let rollBuf = null, rollSrc = null, rollGain = null;
+  fetch('drumroll.mp3').then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => { if (b) rollBuf = b; }).catch(() => {});
+  const rollStop = () => { if (!rollSrc) return; const c = ac(), g = rollGain, src = rollSrc; rollSrc = null;
+    g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + .15); setTimeout(() => { try { src.stop(); } catch (e) {} }, 200); };
   const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
   const noise = (dur, gain, lp) => { const c = ac(), b = c.createBuffer(1, c.sampleRate * dur, c.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
@@ -513,9 +518,11 @@ const Snd = (() => {
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
-    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'drumroll'].forEach(stop); } return on; },
+    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first'].forEach(stop); } return on; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
-    drumroll: safe(start => { clearInterval(roll); if (!start) { stop('drumroll'); return; } if (!on) return; if (files.drumroll) { files.drumroll.loop = true; play('drumroll', .8); return; } let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
+    drumroll: safe(start => { clearInterval(roll); if (!start) { rollStop(); return; } if (!on) return;
+      if (rollBuf) { const c = ac(); c.resume?.(); rollStop(); rollSrc = c.createBufferSource(); rollSrc.buffer = rollBuf; rollSrc.loop = true; rollGain = c.createGain(); rollGain.gain.value = .8; rollSrc.connect(rollGain).connect(c.destination); rollSrc.start(); return; }
+      let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
     click: safe(() => { if (on) noise(.05, .5, 2500); }),
     riser: safe(() => { if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
       g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); }),
