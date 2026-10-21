@@ -31,6 +31,7 @@
   .prev{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:-10px 0 18px;min-height:40px}
   .prev span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 16px;font-size:22px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums}
   .prev span.cx{text-decoration:line-through;opacity:.4}
+  .prev span em{font-style:normal;font-weight:500;font-size:18px;color:var(--gold-soft);letter-spacing:0;margin-left:4px}
   /* 슬롯 릴: 자리별 4개 컬럼 */
   .reel{--h:250px;display:flex;gap:8px;padding:12px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;transition:background .3s,box-shadow .3s}
   .dcol{height:var(--h);width:150px;overflow:hidden;border-radius:14px;background:#fff;color:var(--ink);position:relative;
@@ -124,10 +125,12 @@
   .stage.shake{animation:shake .5s}
   @keyframes shake{10%,90%{transform:translate(-2px,0)}20%,80%{transform:translate(4px,0)}30%,50%,70%{transform:translate(-8px,0)}40%,60%{transform:translate(8px,0)}}
   .reel{position:relative;z-index:5}
-  #win{position:fixed;left:50%;top:7%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:84px;font-weight:900;color:#fff;letter-spacing:-.02em;
+  #win{position:fixed;left:50%;top:5%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:84px;font-weight:900;color:#fff;letter-spacing:-.02em;
        text-shadow:0 0 30px rgba(30,194,242,.9),0 6px 0 rgba(0,0,0,.25);pointer-events:none}
   #win.on{animation:winpop .9s cubic-bezier(.2,1.2,.3,1) forwards}
   @keyframes winpop{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}60%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(2deg)}100%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}}
+  #win .who{display:block;font-size:64px;margin-top:6px;letter-spacing:.02em}
+  #win .who small{font-size:30px;opacity:.75;letter-spacing:.12em;margin-left:10px}
   #win.first{color:#f4c84a;text-shadow:0 0 40px rgba(244,200,74,.9),0 6px 0 rgba(0,0,0,.3)}
   /* 카운트다운 */
   #cd{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,30,55,.6);z-index:5;font-size:min(40vw,420px);font-weight:900;color:#fff}
@@ -248,7 +251,7 @@ async function loadPrizes(){
 }
 async function refresh(){
   const [a, w] = await Promise.all([
-    sb.from('attendee_public').select('id,last4'),
+    sb.from('attendee_public').select('id,name,last4'),
     sb.from('winners').select('id,attendee_id,prize_id,cancelled,drawn_at').order('drawn_at')
   ]);
   people = a.data || []; winners = w.data || [];
@@ -258,20 +261,21 @@ async function refresh(){
   renderLog(); renderPrize();
 }
 const l4Of = id => (people.find(p => p.id === id) || {}).last4 || '????';
+const nameOf = id => (people.find(p => p.id === id) || {}).name || '';
 const prizeOf = id => prizes.find(p => p.id === id) || {};
 function renderPrize(){
   if (!current || busy) return;                       // 추첨 중엔 결과를 미리 노출하지 않음
   const mine = winners.filter(w => w.prize_id === current.id);
   const done = mine.filter(w => !w.cancelled).length, total = current.winner_count;
   $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${pname(current)}<span class="cnt">${done} / ${total}명</span>`;
-  $('prev').innerHTML = mine.map(w => `<span class="${w.cancelled ? 'cx' : ''}">${l4Of(w.attendee_id)}</span>`).join('');
+  $('prev').innerHTML = mine.map(w => `<span class="${w.cancelled ? 'cx' : ''}">${l4Of(w.attendee_id)} <em>${esc(nameOf(w.attendee_id))}</em></span>`).join('');
   const full = done >= total, locked = !isIntro(current);
   $('btnDraw').disabled = busy || full || locked; $('btnDraw').textContent = full ? '추첨 완료' : locked ? '상품 소개 먼저' : (done ? `${done + 1}번째 추첨` : '추첨');
 }
 function renderLog(){
   if (busy) return;
   $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
-    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)}</s>` : l4Of(w.attendee_id)}</span>
+    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)} ${esc(nameOf(w.attendee_id))}</s>` : `${l4Of(w.attendee_id)} <span style="color:var(--muted)">${esc(nameOf(w.attendee_id))}</span>`}</span>
     ${w.cancelled ? '' : `<button data-c="${w.id}">취소</button>`}</div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
 }
 $('log').onclick = async e => {
@@ -384,6 +388,7 @@ async function drawInner(n, append){
   if (done >= current.winner_count) { toast('이 상품은 추첨이 끝났습니다'); return; }
 
   if (stage.classList.contains('on')) { closeStage(); await new Promise(r => setTimeout(r, 1800)); }
+  preloadPop(current.image_url);
   await countdown();
   const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
   const box = $('names'); box.className = 'names rolling';
@@ -402,10 +407,10 @@ async function drawInner(n, append){
     await stops[i];
     reels[i].el.classList.add(isFirst ? 'first' : 'win');
   }
-  Snd.drumroll(false); Snd.crash(isFirst);
+  Snd.drumroll(false); Snd.fanfare(isFirst);
   const fl = $('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
   const st = document.querySelector('.stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake');
-  const w = $('win'); w.textContent = isFirst ? '🏆 1등 당첨!' : '🎉 당첨!'; w.className = 'on' + (isFirst ? ' first' : '');
+  const w = $('win'); const nm = data[0]?.name ? ` ${esc(data[0].name)}` : ''; w.innerHTML = (isFirst ? '🏆 1등 당첨!' : '🎉 당첨!') + `<span class="who">${nm} <small>${data[0]?.last4 || ''}</small></span>`; w.className = 'on' + (isFirst ? ' first' : '');
   celebrate(isFirst);
   if (current.image_url) popcorn(current.image_url, isFirst ? 18 : 12);
   lastDraw = append ? [...lastDraw, ...data] : data;
@@ -460,17 +465,24 @@ function countdown(){ return new Promise(async res => {
   cd.classList.remove('on'); res();
 }); }
 
-/* ── 상품 팝콘: 상품 이미지가 회전하며 튀어오름 ── */
+/* ── 상품 팝콘: 캔버스 하나에 그림 (DOM 요소·필터 없음) ── */
+const popImg = new Image(); let popSrc = '';
+function preloadPop(src){ if (src && src !== popSrc) { popSrc = src; popImg.src = src; popImg.decode?.().catch(() => {}); } }
 function popcorn(src, n){
-  const W = innerWidth, H = innerHeight;
-  for (let i = 0; i < n; i++) setTimeout(() => {
-    const im = document.createElement('img'); im.src = src; im.style.cssText = 'position:fixed;left:0;top:0;width:150px;height:auto;z-index:7;pointer-events:none;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))';
-    document.body.appendChild(im);
-    let x = W * (.2 + Math.random() * .6), y = H + 80, vx = (Math.random() - .5) * 10, vy = -(18 + Math.random() * 12), r = Math.random() * 360, vr = (Math.random() - .5) * 18, sc = .6 + Math.random() * .8;
-    (function f(){ x += vx; y += vy; vy += .45; r += vr;
-      im.style.transform = `translate(${x - 75}px,${y}px) rotate(${r}deg) scale(${sc})`;
-      y < H + 200 ? requestAnimationFrame(f) : im.remove(); })();
-  }, i * 110);
+  preloadPop(src); if (!popImg.complete || !popImg.naturalWidth) return;
+  let cv = document.getElementById('popcv');
+  if (!cv) { cv = document.createElement('canvas'); cv.id = 'popcv'; cv.style.cssText = 'position:fixed;inset:0;z-index:7;pointer-events:none'; document.body.appendChild(cv); }
+  const W = cv.width = innerWidth, H = cv.height = innerHeight, g = cv.getContext('2d');
+  const ar = popImg.naturalHeight / popImg.naturalWidth, P = [];
+  for (let i = 0; i < n; i++) P.push({ t: i * 110, x: W * (.2 + Math.random() * .6), y: H + 80, vx: (Math.random() - .5) * 10, vy: -(18 + Math.random() * 12), r: Math.random() * 6.3, vr: (Math.random() - .5) * .3, w: 90 + Math.random() * 120 });
+  const t0 = performance.now();
+  (function f(now){
+    const el = now - t0; g.clearRect(0, 0, W, H); let alive = false;
+    for (const p of P) { if (el < p.t) { alive = true; continue; } if (p.y > H + 200) continue; alive = true;
+      p.x += p.vx; p.y += p.vy; p.vy += .45; p.r += p.vr;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.drawImage(popImg, -p.w / 2, -p.w * ar / 2, p.w, p.w * ar); g.restore(); }
+    alive ? requestAnimationFrame(f) : cv.remove();
+  })(t0);
 }
 
 /* ── 컨페티 ── */
@@ -479,7 +491,7 @@ function celebrate(first){
   if (!fxConfetti) return;
   const colors = first ? ['#f4c84a','#ffffff','#ffe08a','#1EC2F2'] : ['#1EC2F2','#ffffff','#8FE3FF','#00538E'];
   const shoot = (x, angle, n) => fxConfetti({ particleCount: n, angle, spread: 65, origin: { x, y: .7 }, colors, startVelocity: 55, scalar: 1.2, ticks: 260 });
-  shoot(0, 60, first ? 160 : 90); shoot(1, 120, first ? 160 : 90);
+  shoot(0, 60, first ? 130 : 80); shoot(1, 120, first ? 130 : 80);
   if (first) { let k = 0; const t = setInterval(() => { fxConfetti({ particleCount: 40, spread: 360, origin: { x: Math.random(), y: Math.random() * .4 }, colors, scalar: 1.4, ticks: 300, gravity: .7 }); if (++k > 10) clearInterval(t); }, 220); }
   else setTimeout(() => fxConfetti({ particleCount: 120, spread: 100, origin: { y: .55 }, colors, ticks: 220 }), 250);
 }
@@ -506,6 +518,17 @@ const Snd = (() => {
       this_hb = setInterval(() => { tone(55, .18, .5, 'sine'); setTimeout(() => tone(50, .14, .35, 'sine'), 180); i++; }, Math.max(380, 760 - i * 0)); }),
     doors: safe(() => { if (!on) return; const c = ac(); for (let i = 0; i < 12; i++) setTimeout(() => noise(.1, .14, 400 + i * 60), i * 110); }),
     reveal: safe(first => { if (!on) return; [392, 494, 587, first ? 784 : 740].forEach((f, i) => setTimeout(() => tone(f, 1.8, .14), i * 120)); }),
+    fanfare: safe(first => { if (!on) return; const c = ac(), t0 = c.currentTime;
+      const brass = (f, t, d, g) => { [1, 2, 3].forEach((h, i) => { const o = c.createOscillator(), e = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f * h;
+          e.gain.setValueAtTime(0, t0 + t); e.gain.linearRampToValueAtTime(g / (i + 1) * .5, t0 + t + .03); e.gain.setValueAtTime(g / (i + 1) * .5, t0 + t + d * .7); e.gain.exponentialRampToValueAtTime(.001, t0 + t + d);
+          const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; o.connect(lp).connect(e).connect(c.destination); o.start(t0 + t); o.stop(t0 + t + d + .05); }); };
+      // 따-따-따-따안~ : C5 C5 C5 (빠르게) → G5 (길게) → 화음
+      const seq = first ? [[523, 0, .13], [523, .15, .13], [523, .3, .13], [784, .45, .55], [659, 1.0, .18], [784, 1.18, .18], [1047, 1.36, 1.1]]
+                        : [[523, 0, .13], [523, .15, .13], [523, .3, .13], [784, .45, .9]];
+      seq.forEach(([f, t, d]) => brass(f, t, d, .22));
+      const chordT = first ? 1.36 : .45; [523, 659, 784].forEach(f => brass(f, chordT + .02, first ? 1.1 : .9, .09));
+      setTimeout(() => noise(1.4, .5, 7000), chordT * 1000);                                                            // 심벌
+      if (first) setTimeout(() => noise(1.6, .5, 7000), 1400); }),
     crash: safe(first => { if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => { try { tone(f, 1.2, .18); } catch (e) {} }, i * 90)); })
   };
 })();
