@@ -36,6 +36,11 @@
   .done h2{font-size:26px;margin:0 0 6px}
   .done p{color:var(--muted);margin:0;line-height:1.6}
   .done .time{margin-top:20px;font-size:15px;color:var(--ink)}
+  .done .buddy{display:none;margin:-6px auto 10px;text-align:center}
+  .done .buddy img{width:150px;height:auto;animation:bob 2.4s ease-in-out infinite alternate}
+  .done .buddy small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+  .done .buddy b{color:var(--accent-deep)}
+  @keyframes bob{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-8px) rotate(2deg)}}
   .done.show{display:block;animation:pop .35s ease-out}
   @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
   @media (prefers-reduced-motion:reduce){.done.show{animation:none}}
@@ -66,6 +71,7 @@
 
   <section id="done" class="done">
     <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#00538E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
+    <div class="buddy" id="buddy"></div>
     <h2 id="doneName"></h2>
     <p>출석이 확인되었습니다.<br>행사 끝까지 함께해 주세요.</p>
     <div class="time" id="doneTime"></div>
@@ -86,6 +92,13 @@ const form = $('form'), done = $('done'), msg = $('msg'), btn = $('btn');
 function store(k, v){ try{ v==null ? localStorage.removeItem(k) : localStorage.setItem(k, v) }catch(e){} }
 function load(k){ try{ return localStorage.getItem(k) }catch(e){ return null } }
 
+const SPECIES = [['fish', 50, '물고기'], ['turtle', 12, '거북이'], ['jelly', 12, '해파리'], ['seahorse', 10, '해마'], ['octopus', 8, '문어'], ['crab', 8, '꽃게']];
+const hash = n => { let h = n ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };
+function buddyOf(id){ let r = hash(id) % 100; for (const [k, p, n] of SPECIES) { r -= p; if (r < 0) return [k, n]; } return SPECIES[0]; }
+function showBuddy(id){
+  if (!id) return; const [k, n] = buddyOf(id);
+  $('buddy').innerHTML = `<img src="${k}.png" alt="${n}"><small>출석 현황 화면에서 <b>${n}</b>로 헤엄치고 있어요</small>`; $('buddy').style.display = 'block';
+}
 function showDone(name, when){
   form.style.display = 'none';
   $('doneName').textContent = name + ' 님';
@@ -114,6 +127,7 @@ form.addEventListener('submit', async e => {
 
   store(TOKEN_KEY, data.token);
   showDone(data.name, new Date());
+  const me = await sb.rpc('me', { tok: data.token }); showBuddy(me.data?.id);
 });
 
 function fail(t){ msg.textContent = t; msg.className = 'msg err'; }
@@ -123,7 +137,7 @@ function fail(t){ msg.textContent = t; msg.className = 'msg err'; }
   const tok = load(TOKEN_KEY);
   if (!tok) return;
   const { data } = await sb.rpc('me', { tok });
-  if (data && data.name) showDone(data.name, null);
+  if (data && data.name) { showDone(data.name, data.checked_in_at || null); showBuddy(data.id); }
   else store(TOKEN_KEY, null);
 })();
 </script>

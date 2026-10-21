@@ -145,7 +145,8 @@ const Fish = (() => {
     s.img.onload = () => { const bw = 320, bh = Math.round(bw * s.ar);
       s.v = HUES.map(h => { const o = document.createElement('canvas'); o.width = bw; o.height = bh; const g = o.getContext('2d');
         if (h) g.filter = `hue-rotate(${h}deg)`; g.drawImage(s.img, 0, 0, bw, bh); return o; }); }; }
-  const pick = () => { let r = Math.random() * 100; for (const k in SP) { r -= SP[k].p; if (r <= 0) return k; } return 'fish'; };
+  const hash = n => { let h = n ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };   // 같은 id → 항상 같은 결과
+  const pick = id => { let r = hash(id) % 100; for (const k in SP) { r -= SP[k].p; if (r < 0) return k; } return 'fish'; };
   const FLOOR = 70; const M = { x: -9999, y: -9999, t: 0 };
   addEventListener('mousemove', e => { M.x = e.clientX; M.y = e.clientY; M.t = performance.now(); });
   addEventListener('mouseleave', () => { M.x = M.y = -9999; });
@@ -158,12 +159,12 @@ const Fish = (() => {
   const inZone = (px, py) => zones().some(z => ((px - z.x) / z.rx) ** 2 + ((py - z.y) / z.ry) ** 2 < 1);
   function add(id, l4, fresh){
     if (seen.has(id)) return; seen.add(id);
-    const k = pick(), s = SP[k], w = s.w[0] + Math.random() * (s.w[1] - s.w[0]), h = w * s.ar;
+    const hv = hash(id), k = pick(id), s = SP[k], w = s.w[0] + (hv % 1000) / 1000 * (s.w[1] - s.w[0]), h = w * s.ar;
     let px = Math.random() * W, py = s.mode === 'walk' ? H - FLOOR - h * .35 : H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0]));
     for (let i = 0; i < 20 && s.mode !== 'walk' && inZone(px, py); i++) { px = Math.random() * W; py = H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0])); }
     const spd = s.mode === 'swim' ? .35 + Math.random() * .6 : s.mode === 'walk' ? .15 + Math.random() * .25 : .08 + Math.random() * .15;
     F.push({ id, k, t: l4 || '????', w, h, x: fresh ? W * .5 : px, y: fresh ? H * .42 : py, ty: py,
-             vx: (Math.random() < .5 ? -1 : 1) * spd, vy: 0, spd, ph: Math.random() * 7, face: 0, tvx: 0, hue: Math.random() < .5 ? 0 : 1 + (Math.random() * 2 | 0), born: fresh ? performance.now() : 0 });
+             vx: (Math.random() < .5 ? -1 : 1) * spd, vy: 0, spd, ph: Math.random() * 7, face: 0, tvx: 0, hue: [0, 0, 1, 2][(hv >> 8) % 4], born: fresh ? performance.now() : 0 });
   }
   const weeds = Array.from({length: 14}, (_, i) => ({ x: (i + .5) / 14, h: 90 + Math.random() * 120, ph: Math.random() * 7, w: 8 + Math.random() * 8 }));
   function sea(now){
