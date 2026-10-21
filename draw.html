@@ -263,6 +263,10 @@ async function refresh(){
     sb.from('winners').select('id,attendee_id,prize_id,cancelled,drawn_at').order('drawn_at')
   ]);
   people = a.data || []; winners = w.data || [];
+  if (!winners.length && introduced.size) {                                  // 당첨 기록이 비면(결과 초기화) 상품 소개 상태도 초기화
+    introduced.clear(); sessionStorage.removeItem('union20_intro'); loadPrizes();
+    if (current) { $('prizeSel').onchange(); toast('추첨 결과가 초기화되어 상품 소개 상태도 초기화했습니다'); }
+  }
   const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
   $('totalN').textContent = people.length;
   $('poolN').textContent = people.filter(p => !won.has(p.id)).length;
