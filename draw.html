@@ -499,6 +499,11 @@ function celebrate(first){
 /* ── 사운드 (Web Audio 합성, 파일 불필요) ── */
 const Snd = (() => {
   let ctx, on = true, roll, this_hb;
+  // 같은 폴더에 mp3가 있으면 파일 재생, 없으면 합성음 (fanfare.mp3 / fanfare_first.mp3 / drumroll.mp3)
+  const files = {}; ['fanfare', 'fanfare_first', 'drumroll'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
+    a.addEventListener('canplaythrough', () => { files[n] = a; }, { once: true }); a.addEventListener('error', () => {}, { once: true }); });
+  const play = (n, vol = 1) => { const a = files[n]; if (!a || !on) return false; a.currentTime = 0; a.volume = vol; a.play().catch(() => {}); return true; };
+  const stop = n => { const a = files[n]; if (a) { a.pause(); a.currentTime = 0; } };
   const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
   const noise = (dur, gain, lp) => { const c = ac(), b = c.createBuffer(1, c.sampleRate * dur, c.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
@@ -508,9 +513,9 @@ const Snd = (() => {
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
-    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); } return on; },
+    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'drumroll'].forEach(stop); } return on; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
-    drumroll: safe(start => { clearInterval(roll); if (!start || !on) return; let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
+    drumroll: safe(start => { clearInterval(roll); if (!start) { stop('drumroll'); return; } if (!on) return; if (files.drumroll) { files.drumroll.loop = true; play('drumroll', .8); return; } let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
     click: safe(() => { if (on) noise(.05, .5, 2500); }),
     riser: safe(() => { if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
       g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); }),
@@ -518,7 +523,7 @@ const Snd = (() => {
       this_hb = setInterval(() => { tone(55, .18, .5, 'sine'); setTimeout(() => tone(50, .14, .35, 'sine'), 180); i++; }, Math.max(380, 760 - i * 0)); }),
     doors: safe(() => { if (!on) return; const c = ac(); for (let i = 0; i < 12; i++) setTimeout(() => noise(.1, .14, 400 + i * 60), i * 110); }),
     reveal: safe(first => { if (!on) return; [392, 494, 587, first ? 784 : 740].forEach((f, i) => setTimeout(() => tone(f, 1.8, .14), i * 120)); }),
-    fanfare: safe(first => { if (!on) return; const c = ac(), t0 = c.currentTime;
+    fanfare: safe(first => { if (!on) return; if (first && play('fanfare_first')) return; if (play('fanfare')) return; const c = ac(), t0 = c.currentTime;
       const brass = (f, t, d, g) => { [1, 2, 3].forEach((h, i) => { const o = c.createOscillator(), e = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f * h;
           e.gain.setValueAtTime(0, t0 + t); e.gain.linearRampToValueAtTime(g / (i + 1) * .5, t0 + t + .03); e.gain.setValueAtTime(g / (i + 1) * .5, t0 + t + d * .7); e.gain.exponentialRampToValueAtTime(.001, t0 + t + d);
           const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; o.connect(lp).connect(e).connect(c.destination); o.start(t0 + t); o.stop(t0 + t + d + .05); }); };
