@@ -43,7 +43,10 @@
   .qrbox p{margin:0;font-size:13px;line-height:1.4;color:#dfe4f0;text-align:center}
   .qrbox p b{display:block;color:var(--gold-soft);font-size:14px}
   .status{position:fixed;left:16px;bottom:12px;font-size:13px;color:var(--muted)}
-  .snd{position:fixed;right:16px;bottom:12px;font-size:13px;color:var(--muted);background:rgba(0,25,55,.5);border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:8px;cursor:pointer;z-index:5}
+  .sndbar{position:fixed;right:16px;bottom:12px;display:flex;align-items:center;gap:8px;z-index:5}
+  .sndbar input{width:110px;accent-color:var(--gold)}
+  .sndbar span{font-size:12px;color:var(--muted);width:32px;font-variant-numeric:tabular-nums}
+  .snd{position:static;font-size:13px;color:var(--muted);background:rgba(0,25,55,.5);border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:8px;cursor:pointer;z-index:5}
   .snd.hint{animation:blink 1.2s ease-in-out infinite alternate}
   @keyframes blink{to{background:rgba(30,194,242,.5);color:#fff}}
   .status.live::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#2fbf71;margin-right:6px}
@@ -76,7 +79,7 @@
 
 </div>
 <div class="status" id="status">연결 중…</div>
-<button class="snd hint" id="snd">🔇 클릭하여 사운드 켜기</button>
+<div class="sndbar"><button class="snd hint" id="snd">🔇 클릭하여 사운드 켜기</button><input type="range" id="vol" min="0" max="100" step="5" title="볼륨"><span id="volv"></span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -248,25 +251,32 @@ const Fish = (() => {
 
 /* 사운드: ambient.mp3(배경, 반복) / pop.mp3(출석 효과음). 파일 없으면 효과음만 합성 */
 const Snd = (() => {
-  let ctx, on = false, amb = null, ambGain = null, ambBuf = null, popBuf = null, started = false;
+  let ctx, on = false, amb = null, ambGain = null, ambBuf = null, popBuf = null, started = false, mg = null;
+  let vol = +(localStorage.getItem('union20_vol') ?? 70) / 100;
+  const master = () => { const c = ac(); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(master()); } return mg; };
   const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
   const load = (n, cb) => fetch(n).then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => b && cb(b)).catch(() => {});
   function startAmb(){ if (!ambBuf || amb) return; const c = ac(); amb = c.createBufferSource(); amb.buffer = ambBuf; amb.loop = true; ambGain = c.createGain();
-    ambGain.gain.setValueAtTime(0, c.currentTime); ambGain.gain.linearRampToValueAtTime(.35, c.currentTime + 3); amb.connect(ambGain).connect(c.destination); amb.start(); }
+    ambGain.gain.setValueAtTime(0, c.currentTime); ambGain.gain.linearRampToValueAtTime(.8, c.currentTime + 3); amb.connect(ambGain).connect(master()); amb.start(); }
   function stopAmb(){ if (!amb) return; const c = ac(), a = amb, g = ambGain; amb = null; g.gain.linearRampToValueAtTime(0, c.currentTime + 1); setTimeout(() => { try { a.stop(); } catch (e) {} }, 1100); }
   function blop(){ const c = ac(), o = c.createOscillator(), g = c.createGain(); o.type = 'sine';                    // 합성 물방울 "뾱"
     o.frequency.setValueAtTime(220, c.currentTime); o.frequency.exponentialRampToValueAtTime(880, c.currentTime + .12);
     g.gain.setValueAtTime(.001, c.currentTime); g.gain.exponentialRampToValueAtTime(.4, c.currentTime + .03); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .35);
-    o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .4); }
+    o.connect(g).connect(master()); o.start(); o.stop(c.currentTime + .4); }
   return {
     init(){ if (started) return; started = true; ac().resume?.(); load('ambient.mp3', b => { ambBuf = b; if (on) startAmb(); }); load('pop.mp3', b => popBuf = b); },
     toggle(){ this.init(); on = !on; on ? startAmb() : stopAmb(); return on; },
-    pop(){ if (!on) return; const c = ac(); if (popBuf) { const s = c.createBufferSource(), g = c.createGain(); s.buffer = popBuf; g.gain.value = .8; s.connect(g).connect(c.destination); s.start(); } else blop(); }
+    setVol(v){ vol = v; localStorage.setItem('union20_vol', Math.round(v * 100)); if (mg) mg.gain.setTargetAtTime(v, ac().currentTime, .05); }, getVol(){ return vol; },
+    pop(){ if (!on) return; const c = ac(); if (popBuf) { const s = c.createBufferSource(), g = c.createGain(); s.buffer = popBuf; g.gain.value = .8; s.connect(g).connect(master()); s.start(); } else blop(); }
   };
 })();
 const sndBtn = document.getElementById('snd');
 sndBtn.onclick = e => { const on = Snd.toggle(); sndBtn.textContent = on ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; sndBtn.classList.remove('hint'); e.currentTarget.blur(); };
-document.addEventListener('click', e => { if (e.target !== sndBtn && sndBtn.classList.contains('hint')) sndBtn.click(); }, { once: true });   // 화면 아무 곳이나 첫 클릭 → 켜짐
+document.addEventListener('click', e => { if (!e.target.closest('.sndbar') && sndBtn.classList.contains('hint')) sndBtn.click(); }, { once: true });
+const volEl = document.getElementById('vol'), volV = document.getElementById('volv');
+volEl.value = Math.round(Snd.getVol() * 100); volV.textContent = volEl.value + '%';
+volEl.oninput = e => { Snd.setVol(+e.target.value / 100); volV.textContent = e.target.value + '%'; };
+volEl.onchange = e => e.target.blur();   // 화면 아무 곳이나 첫 클릭 → 켜짐
 
 setCount(0); tick(); setInterval(tick, POLL_MS);
 /* 화면 전환: 마우스 움직이면 탭 표시, 숫자키 1·2 */

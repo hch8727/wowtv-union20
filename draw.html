@@ -145,7 +145,10 @@
   #cd.on{display:grid}
   #cd span{animation:cd .8s ease-out both}
   @keyframes cd{0%{transform:scale(1.8);opacity:0}30%{opacity:1}100%{transform:scale(.9);opacity:0}}
-  .snd{position:fixed;right:16px;bottom:12px;font-size:13px;color:var(--muted);background:transparent;border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:8px}
+  .sndbar{position:fixed;right:16px;bottom:12px;display:flex;align-items:center;gap:8px;z-index:50}
+  .sndbar input{width:110px;accent-color:var(--gold)}
+  .sndbar span{font-size:12px;color:var(--muted);width:32px;font-variant-numeric:tabular-nums}
+  .snd{position:static;font-size:13px;color:var(--muted);background:transparent;border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:8px}
   .ctrl{display:flex;gap:12px;margin-top:10px}
   .ctrl button{padding:16px 34px;font-size:20px;font-weight:700;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
   .ctrl button.primary{background:var(--gold);color:#fff;border-color:var(--gold);font-size:24px;padding:18px 48px}
@@ -220,7 +223,7 @@
 <div id="dim"></div>
 <div id="flash"></div>
 <div id="win"></div>
-<button class="snd" id="snd">🔊 사운드 켜짐</button>
+<div class="sndbar"><button class="snd" id="snd">🔊 사운드 켜짐</button><input type="range" id="vol" min="0" max="100" step="5" title="볼륨"><span id="volv"></span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -515,20 +518,22 @@ function celebrate(first){
 
 /* ── 사운드 (Web Audio 합성, 파일 불필요) ── */
 const Snd = (() => {
-  let ctx, on = true, roll, this_hb;
+  let ctx, on = true, roll, this_hb, mg = null;
+  let vol = +(localStorage.getItem('union20_vol') ?? 70) / 100;                                  // 마스터 볼륨 (0~1)
+  const master = () => { const c = ac(); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(master()); } return mg; };
   // 같은 폴더에 mp3가 있으면 파일 재생, 없으면 합성음 (fanfare.mp3 / fanfare_first.mp3 / drumroll.mp3)
   const files = {}; ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
     a.addEventListener('canplaythrough', () => { files[n] = a; }, { once: true }); a.addEventListener('error', () => {}, { once: true }); });
-  const play = (n, vol = 1) => { const a = files[n]; if (!a || !on) return false; a.currentTime = 0; a.volume = vol; a.play().catch(() => {}); return true; };
+  const play = (n, v = 1) => { const a = files[n]; if (!a || !on) return false; a.currentTime = 0; a.volume = Math.min(1, v * vol); a.play().catch(() => {}); return true; };
   const stop = n => { const a = files[n]; if (a) { a.pause(); a.currentTime = 0; } };
   // 드럼롤은 반복 경계가 안 들리도록 Web Audio 버퍼로 재생
   let rollBuf = null, rollSrc = null, rollGain = null;
   fetch('drumroll.mp3').then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => { if (b) rollBuf = b; }).catch(() => {});
   // 배경음악 bgm.mp3: 반복 재생, 추첨 중엔 볼륨을 낮춤(덕킹)
-  let bgmBuf = null, bgmSrc = null, bgmGain = null; const BGM_VOL = .28;
+  let bgmBuf = null, bgmSrc = null, bgmGain = null; const BGM_VOL = .7;
   fetch('bgm.mp3').then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => { if (b) { bgmBuf = b; if (on && document.getElementById('gate') === null) bgmStart(); } }).catch(() => {});
   function bgmStart(){ if (!bgmBuf || bgmSrc || !on) return; const c = ac(); c.resume?.(); bgmSrc = c.createBufferSource(); bgmSrc.buffer = bgmBuf; bgmSrc.loop = true; bgmGain = c.createGain();
-    bgmGain.gain.setValueAtTime(0, c.currentTime); bgmGain.gain.linearRampToValueAtTime(BGM_VOL, c.currentTime + 2); bgmSrc.connect(bgmGain).connect(c.destination); bgmSrc.start(); }
+    bgmGain.gain.setValueAtTime(0, c.currentTime); bgmGain.gain.linearRampToValueAtTime(BGM_VOL, c.currentTime + 2); bgmSrc.connect(bgmGain).connect(master()); bgmSrc.start(); }
   function bgmStop(){ if (!bgmSrc) return; const c = ac(), src = bgmSrc, g = bgmGain; bgmSrc = null; g.gain.linearRampToValueAtTime(0, c.currentTime + .8); setTimeout(() => { try { src.stop(); } catch (e) {} }, 900); }
   function bgmDuck(down){ if (!bgmGain) return; const c = ac(); bgmGain.gain.cancelScheduledValues(c.currentTime); bgmGain.gain.setValueAtTime(bgmGain.gain.value, c.currentTime); bgmGain.gain.linearRampToValueAtTime(down ? BGM_VOL * .25 : BGM_VOL, c.currentTime + (down ? .6 : 2.5)); }
   const rollStop = () => { if (!rollSrc) return; const c = ac(), g = rollGain, src = rollSrc; rollSrc = null;
@@ -537,20 +542,21 @@ const Snd = (() => {
   const noise = (dur, gain, lp) => { const c = ac(), b = c.createBuffer(1, c.sampleRate * dur, c.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
     const src = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter(); src.buffer = b; f.type = 'lowpass'; f.frequency.value = lp; g.gain.value = gain;
-    src.connect(f).connect(g).connect(c.destination); src.start(); };
+    src.connect(f).connect(g).connect(master()); src.start(); };
   const tone = (freq, dur, gain, type = 'sine') => { const c = ac(), o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
+    g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(master()); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
     toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(stop); bgmStop(); } else bgmStart(); return on; },
     bgm(){ bgmStart(); }, duck(d){ bgmDuck(d); },
+    setVol(v){ vol = v; localStorage.setItem('union20_vol', Math.round(v * 100)); if (mg) mg.gain.setTargetAtTime(v, ac().currentTime, .05); }, getVol(){ return vol; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
     drumroll: safe(start => { clearInterval(roll); if (!start) { rollStop(); return; } if (!on) return;
-      if (rollBuf) { const c = ac(); c.resume?.(); rollStop(); rollSrc = c.createBufferSource(); rollSrc.buffer = rollBuf; rollSrc.loop = true; rollGain = c.createGain(); rollGain.gain.value = .8; rollSrc.connect(rollGain).connect(c.destination); rollSrc.start(); return; }
+      if (rollBuf) { const c = ac(); c.resume?.(); rollStop(); rollSrc = c.createBufferSource(); rollSrc.buffer = rollBuf; rollSrc.loop = true; rollGain = c.createGain(); rollGain.gain.value = .8; rollSrc.connect(rollGain).connect(master()); rollSrc.start(); return; }
       let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
     click: safe(() => { if (on) noise(.05, .5, 2500); }),
     riser: safe(() => { if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
-      g.gain.value = .12; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .7); }),
+      g.gain.value = .12; o.connect(g).connect(master()); o.start(); o.stop(c.currentTime + .7); }),
     heartbeat: safe(start => { clearInterval(this_hb); if (!start || !on) return; let i = 0;
       this_hb = setInterval(() => { tone(55, .18, .5, 'sine'); setTimeout(() => tone(50, .14, .35, 'sine'), 180); i++; }, Math.max(380, 760 - i * 0)); }),
     doors: safe(() => { if (!on) return; if (play('curtain', .9)) return; const c = ac(); for (let i = 0; i < 12; i++) setTimeout(() => noise(.1, .14, 400 + i * 60), i * 110); }),
@@ -558,7 +564,7 @@ const Snd = (() => {
     fanfare: safe(first => { if (!on) return; if (first && play('fanfare_first')) return; if (play('fanfare')) return; const c = ac(), t0 = c.currentTime;
       const brass = (f, t, d, g) => { [1, 2, 3].forEach((h, i) => { const o = c.createOscillator(), e = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f * h;
           e.gain.setValueAtTime(0, t0 + t); e.gain.linearRampToValueAtTime(g / (i + 1) * .5, t0 + t + .03); e.gain.setValueAtTime(g / (i + 1) * .5, t0 + t + d * .7); e.gain.exponentialRampToValueAtTime(.001, t0 + t + d);
-          const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; o.connect(lp).connect(e).connect(c.destination); o.start(t0 + t); o.stop(t0 + t + d + .05); }); };
+          const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; o.connect(lp).connect(e).connect(master()); o.start(t0 + t); o.stop(t0 + t + d + .05); }); };
       // 따-따-따-따안~ : C5 C5 C5 (빠르게) → G5 (길게) → 화음
       const seq = first ? [[523, 0, .13], [523, .15, .13], [523, .3, .13], [784, .45, .55], [659, 1.0, .18], [784, 1.18, .18], [1047, 1.36, 1.1]]
                         : [[523, 0, .13], [523, .15, .13], [523, .3, .13], [784, .45, .9]];
@@ -570,6 +576,9 @@ const Snd = (() => {
   };
 })();
 $('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
+$('vol').value = Math.round(Snd.getVol() * 100); $('volv').textContent = $('vol').value + '%';
+$('vol').oninput = e => { Snd.setVol(+e.target.value / 100); $('volv').textContent = e.target.value + '%'; };
+$('vol').onchange = e => e.target.blur();
 
 function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = 'none', 3000); }
 /* 화면 전환: 마우스 움직이면 탭 표시, 숫자키 1·2 */
