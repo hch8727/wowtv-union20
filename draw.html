@@ -467,7 +467,7 @@ function makeReel(){
     const digits = String(val || '????').padStart(4, '?').slice(-4).split('');
     for (let k = 0; k < 4; k++) {
       if (k === 3) {                                          // 마지막 자리: 암전 + 두근두근 + 길게 끌기
-        $('dim').classList.add('on'); cols[3].col.classList.add('tense'); Snd.heartbeat(true);
+        $('dim').classList.add('on'); cols[3].col.classList.add('tense'); Snd.drumroll(true); Snd.heartbeat(true);   // 드럼롤을 처음부터 다시 → 반복 경계에 안 닿음
         await new Promise(r => setTimeout(r, 2600));
         Snd.heartbeat(false); cols[3].col.classList.remove('tense');
       }
@@ -554,7 +554,7 @@ const Snd = (() => {
     setVol(v){ vol = v; localStorage.setItem('union20_vol', Math.round(v * 100)); if (mg) mg.gain.setTargetAtTime(v, ac().currentTime, .05); }, getVol(){ return vol; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
     drumroll: safe(start => { clearInterval(roll); if (!start) { rollStop(); return; } if (!on) return;
-      if (rollBuf) { const c = ac(); c.resume?.(); rollStop(); rollSrc = c.createBufferSource(); rollSrc.buffer = rollBuf; rollSrc.loop = true; rollGain = c.createGain(); rollGain.gain.value = .8; rollSrc.connect(rollGain).connect(master()); rollSrc.start(); return; }
+      if (rollBuf) { const c = ac(); c.resume?.(); rollStop(); rollSrc = c.createBufferSource(); rollSrc.buffer = rollBuf; rollSrc.loop = true; rollGain = c.createGain(); rollGain.gain.setValueAtTime(.001, c.currentTime); rollGain.gain.exponentialRampToValueAtTime(.8, c.currentTime + .25); rollSrc.connect(rollGain).connect(master()); rollSrc.start(); return; }
       let i = 0; roll = setInterval(() => { try { noise(.06, .35, 900 + (i++ % 2) * 300); } catch (e) { clearInterval(roll); } }, 55); }),
     click: safe(() => { if (on) noise(.05, .5, 2500); }),
     riser: safe(() => { if (!on) return; const c = ac(), o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(200, c.currentTime); o.frequency.exponentialRampToValueAtTime(800, c.currentTime + .7);
