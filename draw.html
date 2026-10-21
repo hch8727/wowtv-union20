@@ -427,7 +427,7 @@ async function drawInner(n, append){
     await stops[i];
     reels[i].el.classList.add(isFirst ? 'first' : 'win');
   }
-  Snd.drumroll(false); Snd.fanfare(isFirst);
+  Snd.drumroll(false); Snd.fanfare(isFirst); setTimeout(() => Snd.applause(isFirst), 900);
   const fl = $('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
   const st = document.querySelector('.stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake');
   const w = $('win'); const nm = data[0]?.name ? ` ${esc(data[0].name)}` : ''; w.innerHTML = (isFirst ? '🏆 1등 당첨!' : '🎉 당첨!') + `<span class="who">${nm} <small>${data[0]?.last4 || ''}</small></span>`; w.className = 'on' + (isFirst ? ' first' : '');
@@ -519,12 +519,12 @@ function celebrate(first){
 
 /* ── 사운드 (Web Audio 합성, 파일 불필요) ── */
 const Snd = (() => {
-  let ctx, on = true, roll, this_hb, mg = null;
+  let ctx, on = true, roll, this_hb, mg = null, clapT;
   let vol = +(localStorage.getItem('union20_vol') ?? 70) / 100;                                  // 마스터 볼륨 (0~1)
   const master = () => { const c = ac(); if (c.state === 'suspended') c.resume().catch(() => {}); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(c.destination); } return mg; };
   ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); }, { capture: true }));   // 사용자 입력 시 오디오 깨우기
   // 같은 폴더에 mp3가 있으면 파일 재생, 없으면 합성음 (fanfare.mp3 / fanfare_first.mp3 / drumroll.mp3)
-  const files = {}; ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
+  const files = {}; ['fanfare', 'fanfare_first', 'curtain', 'tada', 'applause'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
     a.addEventListener('canplaythrough', () => { files[n] = a; }, { once: true }); a.addEventListener('error', () => {}, { once: true }); });
   const play = (n, v = 1) => { const a = files[n]; if (!a || !on) return false; a.currentTime = 0; a.volume = Math.min(1, v * vol); a.play().catch(() => {}); return true; };
   const stop = n => { const a = files[n]; if (a) { a.pause(); a.currentTime = 0; } };
@@ -549,7 +549,7 @@ const Snd = (() => {
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(master()); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
-    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(stop); bgmStop(); } else bgmStart(); return on; },
+    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'curtain', 'tada', 'applause'].forEach(stop); bgmStop(); clearInterval(clapT); } else bgmStart(); return on; },
     bgm(){ bgmStart(); }, duck(d){ bgmDuck(d); },
     setVol(v){ vol = v; localStorage.setItem('union20_vol', Math.round(v * 100)); if (mg) mg.gain.setTargetAtTime(v, ac().currentTime, .05); }, getVol(){ return vol; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
@@ -574,6 +574,18 @@ const Snd = (() => {
       const chordT = first ? 1.36 : .45; [523, 659, 784].forEach(f => brass(f, chordT + .02, first ? 1.1 : .9, .09));
       setTimeout(() => noise(1.4, .5, 7000), chordT * 1000);                                                            // 심벌
       if (first) setTimeout(() => noise(1.6, .5, 7000), 1400); }),
+    applause: safe(first => { if (!on) return; if (play('applause', .9)) return;
+      const c = ac(), dur = first ? 5 : 3, t0 = c.currentTime; clearInterval(clapT);
+      const clap = (t, g) => { const b = c.createBuffer(1, c.sampleRate * .05, c.sampleRate), d = b.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+        const src = c.createBufferSource(), f = c.createBiquadFilter(), gn = c.createGain(); src.buffer = b; f.type = 'bandpass'; f.frequency.value = 1500 + Math.random() * 2500; f.Q.value = .8;
+        gn.gain.value = g; src.connect(f).connect(gn).connect(master()); src.start(t0 + t); };
+      for (let t = 0; t < dur; t += .018) {                                          // 초당 ~55회, 시작은 커지고 끝은 잦아듦
+        const env = Math.min(1, t / .6) * Math.min(1, (dur - t) / 1.2);
+        if (Math.random() < .75) clap(t + Math.random() * .015, .05 + Math.random() * .12 * env); }
+      const room = c.createBuffer(1, c.sampleRate * dur, c.sampleRate), rd = room.getChannelData(0);  // 뒤를 받쳐주는 군중 웅성임
+      for (let i = 0; i < rd.length; i++) { const t = i / c.sampleRate; rd[i] = (Math.random() * 2 - 1) * .08 * Math.min(1, t / .8) * Math.min(1, (dur - t) / 1.5); }
+      const rs = c.createBufferSource(), rf = c.createBiquadFilter(); rs.buffer = room; rf.type = 'bandpass'; rf.frequency.value = 900; rf.Q.value = .5; rs.connect(rf).connect(master()); rs.start(t0); }),
     crash: safe(first => { if (!on) return; noise(1.6, .6, 8000); [523, 659, 784, first ? 1047 : 988].forEach((f, i) => setTimeout(() => { try { tone(f, 1.2, .18); } catch (e) {} }, i * 90)); })
   };
 })();
