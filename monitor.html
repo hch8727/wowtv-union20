@@ -130,12 +130,12 @@ const Fish = (() => {
   const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
   // 종류별 설정: 이미지, 가로세로비, 번호 위치(비율), 원래 바라보는 방향, 움직임, 활동 수심(화면 비율), 크기
   const SP = {
-    fish:     { src: 'fish.png',     ar: 509 / 753, belly: { x: .63, y: .72 }, faces: 1,  mode: 'swim',  zone: [.08, .85], w: [100, 150], p: 50 },
-    turtle:   { src: 'turtle.png',   ar: 279 / 388, belly: { x: .66, y: .42 }, faces: -1, mode: 'swim',  zone: [.1, .8],   w: [120, 160], p: 12 },
-    jelly:    { src: 'jelly.png',    ar: 368 / 302, belly: { x: .5, y: .5 },   faces: 0,  mode: 'drift', zone: [.06, .5],  w: [80, 110],  p: 12 },
-    seahorse: { src: 'seahorse.png', ar: 445 / 237, belly: { x: .56, y: .5 },  faces: -1, mode: 'hover', zone: [.55, .82], w: [60, 85],   p: 10 },
-    octopus:  { src: 'octopus.png',  ar: 304 / 378, belly: { x: .5, y: .17 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [110, 140], p: 8 },
-    crab:     { src: 'crab.png',     ar: 288 / 366, belly: { x: .5, y: .33 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [100, 130], p: 8 },
+    fish:     { src: 'fish.png',     ar: 272 / 340, belly: { x: .45, y: .72 }, faces: -1, mode: 'swim',  zone: [.08, .85], w: [100, 150], p: 50 },
+    turtle:   { src: 'turtle.png',   ar: 291 / 375, belly: { x: .42, y: .45 }, faces: 1,  mode: 'swim',  zone: [.1, .8],   w: [120, 160], p: 12 },
+    jelly:    { src: 'jelly.png',    ar: 346 / 271, belly: { x: .5, y: .52 },  faces: 0,  mode: 'drift', zone: [.06, .5],  w: [80, 110],  p: 12 },
+    seahorse: { src: 'seahorse.png', ar: 350 / 198, belly: { x: .55, y: .5 },  faces: 1,  mode: 'hover', zone: [.55, .82], w: [60, 85],   p: 10 },
+    octopus:  { src: 'octopus.png',  ar: 340 / 344, belly: { x: .5, y: .2 },   faces: 0,  mode: 'walk',  zone: [1, 1],     w: [110, 140], p: 8 },
+    crab:     { src: 'crab.png',     ar: 278 / 328, belly: { x: .5, y: .74 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [100, 130], p: 8 },
   };
   const HUES = [0, -22, 22];                                                                 // 색 변형 3종, 미리 렌더링해서 재사용
   for (const k in SP) { const s = SP[k]; s.img = new Image(); s.img.src = s.src; s.v = [];
