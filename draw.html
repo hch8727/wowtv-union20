@@ -25,7 +25,7 @@
   .wrap{height:100%;display:grid;grid-template-rows:auto 1fr;padding:28px 48px 36px}
   header{display:flex;align-items:center;justify-content:space-between}
   .brand{width:300px;height:auto;background:#fff;padding:10px 16px;border-radius:12px;box-sizing:content-box}
-  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:40px}
+  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:90px}
   .prize{font-size:34px;color:var(--gold-soft);font-weight:500}
   .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
   .names{margin:22px 0 26px;min-height:280px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
@@ -133,7 +133,7 @@
   .stage.shake{animation:shake .5s}
   @keyframes shake{10%,90%{transform:translate(-2px,0)}20%,80%{transform:translate(4px,0)}30%,50%,70%{transform:translate(-8px,0)}40%,60%{transform:translate(8px,0)}}
   .reel{position:relative;z-index:5}
-  #win{position:fixed;left:50%;top:4%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:76px;font-weight:900;color:#fff;letter-spacing:-.02em;
+  #win{position:fixed;left:50%;top:9%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:76px;font-weight:900;color:#fff;letter-spacing:-.02em;
        text-shadow:0 0 30px rgba(30,194,242,.9),0 6px 0 rgba(0,0,0,.25);pointer-events:none}
   #win.on{animation:winpop .9s cubic-bezier(.2,1.2,.3,1) forwards}
   @keyframes winpop{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}60%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(2deg)}100%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}}
@@ -243,9 +243,9 @@ $('gateForm').onsubmit = async e => {
   const pw = $('pw').value;
   const { data } = await sb.rpc('admin_login', { pw });
   if (!data) return $('gateErr').textContent = '비밀번호가 틀렸습니다';
-  PW = pw; sessionStorage.setItem('union20_pw', pw); $('gate').remove(); init();
+  PW = pw; sessionStorage.setItem('union20_pw', pw); $('gate').remove(); init(); Snd.bgm();
 };
-if (PW) { $('gate').style.visibility = 'hidden'; sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); } else { sessionStorage.removeItem('union20_pw'); PW = ''; $('gate').style.visibility = ''; } }); }
+if (PW) { $('gate').style.visibility = 'hidden'; sb.rpc('admin_login', { pw: PW }).then(({data}) => { if (data) { $('gate').remove(); init(); document.addEventListener('click', () => Snd.bgm(), { once: true }); document.addEventListener('keydown', () => Snd.bgm(), { once: true }); } else { sessionStorage.removeItem('union20_pw'); PW = ''; $('gate').style.visibility = ''; } }); }
 
 /* ── 데이터 ── */
 async function init(){ await Promise.all([loadPrizes(), refresh()]); setInterval(refresh, 4000); }
@@ -387,7 +387,7 @@ document.addEventListener('keydown', e => {
 async function draw(n, append = false){
   try { await drawInner(n, append); }
   catch (e) { toast('오류: ' + (e.message || e)); console.error(e); }
-  finally { Snd.drumroll(false); Snd.heartbeat(false); $('dim').classList.remove('on'); $('cd').classList.remove('on'); busy = false; renderPrize(); }
+  finally { Snd.drumroll(false); Snd.heartbeat(false); setTimeout(() => Snd.duck(false), 4500); $('dim').classList.remove('on'); $('cd').classList.remove('on'); busy = false; renderPrize(); }
 }
 async function drawInner(n, append){
   if (busy || !current) return; busy = true;
@@ -400,6 +400,7 @@ async function drawInner(n, append){
 
   if (stage.classList.contains('on')) { closeStage(); await new Promise(r => setTimeout(r, 1800)); }
   preloadPop(current.image_url);
+  Snd.duck(true);
   await countdown();
   const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
   const box = $('names'); box.className = 'names rolling';
@@ -427,6 +428,7 @@ async function drawInner(n, append){
   lastDraw = append ? [...lastDraw, ...data] : data;
   box.className = 'names win';
   $('btnRedraw').disabled = false; $('btnNext').disabled = false;
+  setTimeout(() => Snd.duck(false), 4500);
   refresh();
 }
 
@@ -518,6 +520,13 @@ const Snd = (() => {
   // 드럼롤은 반복 경계가 안 들리도록 Web Audio 버퍼로 재생
   let rollBuf = null, rollSrc = null, rollGain = null;
   fetch('drumroll.mp3').then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => { if (b) rollBuf = b; }).catch(() => {});
+  // 배경음악 bgm.mp3: 반복 재생, 추첨 중엔 볼륨을 낮춤(덕킹)
+  let bgmBuf = null, bgmSrc = null, bgmGain = null; const BGM_VOL = .28;
+  fetch('bgm.mp3').then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => { if (b) { bgmBuf = b; if (on && document.getElementById('gate') === null) bgmStart(); } }).catch(() => {});
+  function bgmStart(){ if (!bgmBuf || bgmSrc || !on) return; const c = ac(); c.resume?.(); bgmSrc = c.createBufferSource(); bgmSrc.buffer = bgmBuf; bgmSrc.loop = true; bgmGain = c.createGain();
+    bgmGain.gain.setValueAtTime(0, c.currentTime); bgmGain.gain.linearRampToValueAtTime(BGM_VOL, c.currentTime + 2); bgmSrc.connect(bgmGain).connect(c.destination); bgmSrc.start(); }
+  function bgmStop(){ if (!bgmSrc) return; const c = ac(), src = bgmSrc, g = bgmGain; bgmSrc = null; g.gain.linearRampToValueAtTime(0, c.currentTime + .8); setTimeout(() => { try { src.stop(); } catch (e) {} }, 900); }
+  function bgmDuck(down){ if (!bgmGain) return; const c = ac(); bgmGain.gain.cancelScheduledValues(c.currentTime); bgmGain.gain.setValueAtTime(bgmGain.gain.value, c.currentTime); bgmGain.gain.linearRampToValueAtTime(down ? BGM_VOL * .25 : BGM_VOL, c.currentTime + (down ? .6 : 2.5)); }
   const rollStop = () => { if (!rollSrc) return; const c = ac(), g = rollGain, src = rollSrc; rollSrc = null;
     g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + .15); setTimeout(() => { try { src.stop(); } catch (e) {} }, 200); };
   const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
@@ -529,7 +538,8 @@ const Snd = (() => {
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
-    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(stop); } return on; },
+    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(stop); bgmStop(); } else bgmStart(); return on; },
+    bgm(){ bgmStart(); }, duck(d){ bgmDuck(d); },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
     drumroll: safe(start => { clearInterval(roll); if (!start) { rollStop(); return; } if (!on) return;
       if (rollBuf) { const c = ac(); c.resume?.(); rollStop(); rollSrc = c.createBufferSource(); rollSrc.buffer = rollBuf; rollSrc.loop = true; rollGain = c.createGain(); rollGain.gain.value = .8; rollSrc.connect(rollGain).connect(c.destination); rollSrc.start(); return; }
