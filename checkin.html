@@ -92,7 +92,7 @@ const form = $('form'), done = $('done'), msg = $('msg'), btn = $('btn');
 function store(k, v){ try{ v==null ? localStorage.removeItem(k) : localStorage.setItem(k, v) }catch(e){} }
 function load(k){ try{ return localStorage.getItem(k) }catch(e){ return null } }
 
-const SPECIES = [['clown', 14, '물고기'], ['blue', 12, '파랑물고기'], ['yellow', 12, '노랑물고기'], ['butterfly', 10, '나비고기'], ['turtle', 10, '바다거북'], ['jelly', 9, '해파리'], ['seahorse', 8, '해마'], ['octopus', 7, '문어'], ['crab', 7, '꽃게'], ['star', 6, '불가사리'], ['puffer', 5, '복어']];
+const SPECIES = [['clown', 15, '물고기'], ['blue', 15, '파랑물고기'], ['turtle', 11, '바다거북'], ['ray', 9, '가오리'], ['jelly', 10, '해파리'], ['seahorse', 9, '해마'], ['octopus', 8, '문어'], ['crab', 8, '꽃게'], ['star', 7, '불가사리'], ['puffer', 8, '복어']];
 const hash = n => { let h = n ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };
 function buddyOf(id){ let r = hash(id) % 100; for (const [k, p, n] of SPECIES) { r -= p; if (r < 0) return [k, n]; } return SPECIES[0]; }
 function showBuddy(id){

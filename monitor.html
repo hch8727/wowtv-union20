@@ -129,17 +129,16 @@ const Fish = (() => {
   const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
   // 종류별 설정: 이미지, 가로세로비, 번호 위치(비율), 원래 바라보는 방향, 움직임, 활동 수심(화면 비율), 크기
   const SP = {
-    clown:     { src: 'clown.png',     ar: 171 / 216, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [100, 140], p: 14, name: '물고기' },
-    blue:      { src: 'blue.png',      ar: 168 / 221, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [100, 140], p: 12, name: '파랑물고기' },
-    yellow:    { src: 'yellow.png',    ar: 162 / 202, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [100, 140], p: 12, name: '노랑물고기' },
-    butterfly: { src: 'butterfly.png', ar: 168 / 188, belly: { x: .5, y: .76 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [95, 130],  p: 10, name: '나비고기' },
-    turtle:    { src: 'turtle.png',    ar: 183 / 264, belly: { x: .64, y: .45 }, faces: -1, mode: 'swim',  zone: [.1, .8],   w: [130, 170], p: 10, name: '바다거북' },
-    jelly:     { src: 'jelly.png',     ar: 195 / 175, belly: { x: .5, y: .5 },   faces: 0,  mode: 'drift', zone: [.06, .5],  w: [80, 110],  p: 9,  name: '해파리' },
-    seahorse:  { src: 'seahorse.png',  ar: 256 / 143, belly: { x: .55, y: .5 },  faces: 1,  mode: 'hover', zone: [.55, .82], w: [60, 85],   p: 8,  name: '해마' },
-    octopus:   { src: 'octopus.png',   ar: 216 / 279, belly: { x: .5, y: .22 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [120, 150], p: 7,  name: '문어' },
-    crab:      { src: 'crab.png',      ar: 154 / 233, belly: { x: .5, y: .7 },   faces: 0,  mode: 'walk',  zone: [1, 1],     w: [110, 140], p: 7,  name: '꽃게' },
-    star:      { src: 'star.png',      ar: 207 / 225, belly: { x: .5, y: .7 },   faces: 0,  mode: 'walk',  zone: [1, 1],     w: [90, 120],  p: 6,  name: '불가사리', slow: .3 },
-    puffer:    { src: 'puffer.png',    ar: 190 / 215, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.1, .8],   w: [100, 130], p: 5,  name: '복어', slow: .5, puff: true },
+    clown:    { src: 'clown.png',    ar: 226 / 293, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [110, 150], p: 15, name: '물고기' },
+    blue:     { src: 'blue.png',     ar: 209 / 258, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [105, 145], p: 15, name: '파랑물고기' },
+    turtle:   { src: 'turtle.png',   ar: 261 / 297, belly: { x: .4, y: .5 },   faces: 1,  mode: 'swim',  zone: [.1, .8],   w: [130, 170], p: 11, name: '바다거북' },
+    ray:      { src: 'ray.png',      ar: 322 / 325, belly: { x: .46, y: .52 }, faces: 1,  mode: 'swim',  zone: [.15, .8],  w: [150, 200], p: 9,  name: '가오리', slow: .6 },
+    jelly:    { src: 'jelly.png',    ar: 326 / 206, belly: { x: .5, y: .5 },   faces: 0,  mode: 'drift', zone: [.06, .5],  w: [80, 110],  p: 10, name: '해파리' },
+    seahorse: { src: 'seahorse.png', ar: 302 / 165, belly: { x: .52, y: .5 },  faces: -1, mode: 'hover', zone: [.55, .82], w: [65, 90],   p: 9,  name: '해마' },
+    octopus:  { src: 'octopus.png',  ar: 284 / 254, belly: { x: .5, y: .22 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [120, 150], p: 8,  name: '문어' },
+    crab:     { src: 'crab.png',     ar: 242 / 294, belly: { x: .5, y: .68 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [110, 140], p: 8,  name: '꽃게' },
+    star:     { src: 'star.png',     ar: 249 / 256, belly: { x: .5, y: .7 },   faces: 0,  mode: 'walk',  zone: [1, 1],     w: [90, 120],  p: 7,  name: '불가사리', slow: .3 },
+    puffer:   { src: 'puffer.png',   ar: 217 / 263, belly: { x: .5, y: .72 },  faces: -1, mode: 'swim',  zone: [.1, .8],   w: [100, 130], p: 8,  name: '복어', slow: .5, puff: true },
   };
   const HUES = [0, -22, 22];                                                                 // 색 변형 3종, 미리 렌더링해서 재사용
   for (const k in SP) { const s = SP[k]; s.img = new Image(); s.img.src = s.src; s.v = [];
