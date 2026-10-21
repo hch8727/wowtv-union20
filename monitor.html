@@ -11,17 +11,18 @@
   html,body{height:100%;margin:0}
   body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
        background-image:linear-gradient(#1a8fd0 0%,#0b64a6 30%,#00538E 60%,#022c52 100%)}
-  .wrap{height:100%;display:grid;grid-template-columns:1fr 360px;grid-template-rows:auto 1fr;gap:0 48px;padding:40px 56px}
-  header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+  body.hasbg{background:#022c52 url(bg.jpg) center/cover no-repeat}
+  .wrap{height:100%;padding:36px 48px;display:flex;flex-direction:column;pointer-events:none}
+  header{display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
+  .panel{display:flex;align-items:center;gap:26px;background:rgba(0,25,55,.42);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:16px 22px 16px 28px}
   .brand{width:380px;height:auto;background:#fff;padding:12px 18px;border-radius:12px;box-sizing:content-box}
-  .stage{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-  .label{font-size:28px;color:var(--gold-soft);font-weight:500;letter-spacing:.02em}
-  .count{font-size:min(30vw,340px);line-height:1;font-weight:800;letter-spacing:0;font-variant-numeric:tabular-nums;margin:8px 0 0;vertical-align:bottom}
+  .label{font-size:17px;color:var(--gold-soft);font-weight:500;letter-spacing:.02em;margin-bottom:2px}
+  .count{font-size:112px;line-height:1;font-weight:800;letter-spacing:0;font-variant-numeric:tabular-nums;vertical-align:bottom}
   .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4);transform-origin:center}
   @keyframes bump{30%{transform:scale(1.06);color:var(--gold-soft)}}
-  .unit{font-size:40px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:1.1em}
+  .unit{font-size:26px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:1.3em}
   /* 6. 출석 순간 연출 */
-  #pop{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:200px;font-weight:900;letter-spacing:.06em;color:#fff;
+  #pop{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);font-size:200px;font-weight:900;letter-spacing:.06em;color:#fff;
        text-shadow:0 0 40px rgba(30,194,242,.9),0 0 90px rgba(30,194,242,.6);pointer-events:none;opacity:0;z-index:4}
   #pop.go{animation:popin 1.6s cubic-bezier(.2,.9,.3,1) forwards}
   @keyframes popin{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,40%) scale(.3)}}
@@ -31,15 +32,15 @@
   .digit{display:inline-block;width:.68em;height:1.5em;position:relative}
   .digit .col{position:absolute;left:0;top:0;width:100%;transition:transform .9s cubic-bezier(.2,.8,.2,1)}
   .digit .col span{display:block;height:1.5em;line-height:1.5;text-align:center}
-  .countRow{display:flex;align-items:baseline;justify-content:center;gap:14px}
+  .countRow{display:flex;align-items:baseline;gap:10px}
   /* 8. 파티클 */
   #bg{position:fixed;inset:0;z-index:0;pointer-events:none}
   .wrap{position:relative;z-index:1}
-  aside{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px}
-  .qr{background:#fff;padding:18px;border-radius:20px;width:300px;height:300px;display:grid;place-items:center}
-  .qr img,.qr canvas{width:264px!important;height:264px!important;image-rendering:pixelated}
-  aside p{margin:0;font-size:20px;line-height:1.5;color:#dfe4f0}
-  aside p b{display:block;color:var(--gold-soft);font-size:24px;margin-bottom:4px}
+  .qrbox{display:flex;flex-direction:column;align-items:center;gap:8px;border-left:1px solid rgba(255,255,255,.14);padding-left:26px}
+  .qr{background:#fff;padding:8px;border-radius:12px;width:148px;height:148px;display:grid;place-items:center}
+  .qr img,.qr canvas{width:132px!important;height:132px!important;image-rendering:pixelated}
+  .qrbox p{margin:0;font-size:13px;line-height:1.4;color:#dfe4f0;text-align:center}
+  .qrbox p b{display:block;color:var(--gold-soft);font-size:14px}
   .status{position:fixed;left:16px;bottom:12px;font-size:13px;color:var(--muted)}
   .status.live::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#2fbf71;margin-right:6px}
   @media (prefers-reduced-motion:reduce){.count.bump,.chip{animation:none}}
@@ -64,17 +65,12 @@
 <div class="wrap">
   <header>
     <img class="brand" src="logo.png" alt="한국경제TV">
+  <div class="panel">
+    <div><div class="label">지금까지 출석하신 분</div><div class="countRow"><span class="count" id="count">0</span><span class="unit">명</span></div></div>
+    <div class="qrbox"><div class="qr" id="qr"></div><p><b>QR 출석</b>카메라 · 카카오톡 스캔</p></div>
+  </div>
   </header>
 
-  <section class="stage">
-    <div class="label">지금까지 출석하신 분</div>
-    <div class="countRow"><span class="count" id="count">0</span><span class="unit">명</span></div>
-  </section>
-
-  <aside>
-    <div class="qr" id="qr"></div>
-    <p><b>QR을 찍어 출석해 주세요</b>카메라 또는 카카오톡 스캔</p>
-  </aside>
 </div>
 <div class="status" id="status">연결 중…</div>
 
@@ -89,8 +85,9 @@ const POLL_MS = 2500, RECENT_N = 8;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $count = document.getElementById('count'), $status = document.getElementById('status');
 let fishLoaded = false;
+(() => { const t = new Image(); t.onload = () => { document.body.classList.add('hasbg'); window.__bg = true; }; t.src = 'bg.jpg'; })();   // bg.jpg가 있으면 배경으로
 async function loadAllFish(){ const { data } = await sb.from('attendee_public').select('id,last4').order('checked_in_at'); (data || []).forEach(r => Fish.add(r.id, r.last4, false)); }
-new QRCode(document.getElementById('qr'), { text: CHECKIN_URL, width: 264, height: 264, correctLevel: QRCode.CorrectLevel.M });
+new QRCode(document.getElementById('qr'), { text: CHECKIN_URL, width: 132, height: 132, correctLevel: QRCode.CorrectLevel.M });
 
 let last = -1, lastIds = new Set();
 
@@ -155,7 +152,7 @@ const Fish = (() => {
     for (const f of F) { f.x = f.x / ow * W; f.y = f.y / oh * H; f.ty = f.ty / oh * H; if (SP[f.k].mode === 'walk') f.ty = H - FLOOR - f.h * .35; }
     for (const b of B) { b.x = b.x / ow * W; b.y = b.y / oh * H; } }, 150); });
   for (let i = 0; i < 45; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1.5 + Math.random() * 5, v: .25 + Math.random() * .6, a: Math.random() * 7 });
-  const zones = () => [{ x: W * .37, y: H * .5, rx: W * .27, ry: H * .38 }, { x: W * .85, y: H * .52, rx: W * .14, ry: H * .3 }];   // 카운트·QR 영역은 비켜 다님
+  const zones = () => [{ x: W * .78, y: H * .13, rx: W * .26, ry: H * .2 }, { x: W * .14, y: H * .07, rx: W * .16, ry: H * .1 }];   // 우상단 패널·로고 영역은 비켜 다님
   const inZone = (px, py) => zones().some(z => ((px - z.x) / z.rx) ** 2 + ((py - z.y) / z.ry) ** 2 < 1);
   function add(id, l4, fresh){
     if (seen.has(id)) return; seen.add(id);
@@ -164,11 +161,11 @@ const Fish = (() => {
     for (let i = 0; i < 20 && s.mode !== 'walk' && inZone(px, py); i++) { px = Math.random() * W; py = H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0])); }
     const spd = s.mode === 'swim' ? .35 + Math.random() * .6 : s.mode === 'walk' ? .15 + Math.random() * .25 : .08 + Math.random() * .15;
     F.push({ id, k, t: l4 || '????', w, h, x: fresh ? W * .5 : px, y: fresh ? H * .42 : py, ty: py,
-             vx: (Math.random() < .5 ? -1 : 1) * spd, vy: 0, spd, ph: Math.random() * 7, face: 0, tvx: 0, hue: [0, 0, 1, 2][(hv >> 8) % 4], born: fresh ? performance.now() : 0 });
+             vx: (Math.random() < .5 ? -1 : 1) * spd, vy: 0, spd, ph: Math.random() * 7, face: 0, tvx: 0, hue: [0, 0, 1, 2][(hv >>> 8) % 4], born: fresh ? performance.now() : 0 });
   }
   const weeds = Array.from({length: 14}, (_, i) => ({ x: (i + .5) / 14, h: 90 + Math.random() * 120, ph: Math.random() * 7, w: 8 + Math.random() * 8 }));
   function sea(now){
-    for (let i = 0; i < 6; i++) { const cx = W * (.1 + i * .16) + Math.sin(now / 4000 + i) * 60, sw = 120 + i * 20;
+    if (!window.__bg) for (let i = 0; i < 6; i++) { const cx = W * (.1 + i * .16) + Math.sin(now / 4000 + i) * 60, sw = 120 + i * 20;
       const g = x.createLinearGradient(0, 0, 0, H * .8); g.addColorStop(0, 'rgba(180,230,255,.14)'); g.addColorStop(1, 'rgba(180,230,255,0)');
       x.fillStyle = g; x.beginPath(); x.moveTo(cx - sw * .3, 0); x.lineTo(cx + sw * .3, 0); x.lineTo(cx + sw + 80, H * .8); x.lineTo(cx - sw + 80, H * .8); x.closePath(); x.fill(); }
     const sg = x.createLinearGradient(0, H - FLOOR, 0, H); sg.addColorStop(0, 'rgba(0,20,45,0)'); sg.addColorStop(1, 'rgba(0,12,30,.9)');
