@@ -22,11 +22,11 @@
   @keyframes bump{30%{transform:scale(1.06);color:var(--gold-soft)}}
   .unit{font-size:26px;font-weight:600;color:var(--muted);letter-spacing:0;align-self:flex-end;padding-bottom:1.3em}
   /* 6. 출석 순간 연출 */
-  #pop{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);font-size:200px;font-weight:900;letter-spacing:.06em;color:#fff;
-       text-shadow:0 0 40px rgba(30,194,242,.9),0 0 90px rgba(30,194,242,.6);pointer-events:none;opacity:0;z-index:4}
-  #pop.go{animation:popin 1.6s cubic-bezier(.2,.9,.3,1) forwards}
-  @keyframes popin{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,40%) scale(.3)}}
-  #pop small{display:block;font-size:28px;font-weight:600;letter-spacing:.1em;color:var(--gold-soft);text-shadow:none;margin-top:-10px}
+  #pop{position:fixed;left:50%;top:66%;transform:translate(-50%,-50%);font-size:40px;font-weight:800;letter-spacing:.08em;color:#fff;
+       text-shadow:0 2px 12px rgba(0,0,0,.5);pointer-events:none;opacity:0;z-index:4;background:rgba(0,25,55,.45);padding:8px 26px;border-radius:999px}
+  #pop.go{animation:popin 2.4s ease-out forwards}
+  @keyframes popin{0%{opacity:0;transform:translate(-50%,-30%)}15%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%)}}
+  #pop small{font-size:20px;font-weight:600;color:var(--gold-soft);margin-left:14px;letter-spacing:.02em}
   /* 7. 숫자 롤업 */
   .count{display:inline-flex;overflow:hidden;height:1.5em;line-height:1.5}
   .digit{display:inline-block;width:.68em;height:1.5em;position:relative}
@@ -123,7 +123,7 @@ function setCount(n){
   [...str].forEach((d, i) => { const col = $count.querySelectorAll('.digit .col')[i]; col.style.transform = `translateY(-${d * 1.5}em)`; });
 }
 /* 6. 출석 순간 연출 */
-function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l4 || '????'}<small>출석 완료</small>`; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
+function popIn(l4){ const p = document.getElementById('pop'); p.innerHTML = `${l4 || '????'}<small>출석 완료!</small>`; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
 /* 8. 어항: 뒷자리 4개가 물고기처럼 헤엄침 + 거품 */
 const Fish = (() => {
   const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
@@ -159,7 +159,7 @@ const Fish = (() => {
     let px = Math.random() * W, py = s.mode === 'walk' ? H - FLOOR - h * .35 : H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0]));
     for (let i = 0; i < 20 && s.mode !== 'walk' && inZone(px, py); i++) { px = Math.random() * W; py = H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0])); }
     const spd = s.mode === 'swim' ? .35 + Math.random() * .6 : s.mode === 'walk' ? .15 + Math.random() * .25 : .08 + Math.random() * .15;
-    F.push({ id, k, t: l4 || '????', w, h, x: fresh ? W * .5 : px, y: fresh ? H * .42 : py, ty: py,
+    F.push({ id, k, t: l4 || '????', w, h, x: fresh ? W * .5 : px, y: fresh ? H * .46 : py, ty: py,
              vx: (Math.random() < .5 ? -1 : 1) * spd, vy: 0, spd, ph: Math.random() * 7, face: 0, tvx: 0, hue: [0, 0, 1, 2][(hv >>> 8) % 4], born: fresh ? performance.now() : 0 });
   }
   const weeds = Array.from({length: 14}, (_, i) => ({ x: (i + .5) / 14, h: 90 + Math.random() * 120, ph: Math.random() * 7, w: 8 + Math.random() * 8 }));
@@ -181,10 +181,11 @@ const Fish = (() => {
       x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(200,240,255,.45)'; x.lineWidth = 1.2; x.stroke(); x.beginPath(); x.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .3, 0, 7); x.fillStyle = 'rgba(255,255,255,.5)'; x.fill(); }
     const zs = zones(); const mouseOn = now - M.t < 2500;        // 마우스가 멈춘 지 2.5초 지나면 무시
     // 바닥 생물이 앞에 오도록 정렬
-    F.sort((a, b) => (SP[a.k].mode === 'walk') - (SP[b.k].mode === 'walk'));
+    F.sort((a, b) => (SP[a.k].mode === 'walk') - (SP[b.k].mode === 'walk') || (!!a.born) - (!!b.born));
     for (const f of F) {
       const s = SP[f.k]; f.ph += .035;
-      if (mouseOn) {                                            // 마우스 가까이 오면 놀라서 달아남
+      if (f.born && now - f.born < 1100) { f.x = W * .5; f.y = H * .46; }
+      if (mouseOn && !f.born) {                                            // 마우스 가까이 오면 놀라서 달아남
         const dx = f.x - M.x, dy = f.y - M.y, d2 = dx * dx + dy * dy, R = 220;
         if (d2 < R * R) { const d = Math.sqrt(d2) || 1, k = (1 - d / R) * .9;
           if (s.mode === 'walk') { f.vx += (dx / d) * k * 1.2; f.tvx = 0; }
@@ -213,8 +214,16 @@ const Fish = (() => {
       if (f.x < -f.w) f.x = W + f.w; if (f.x > W + f.w) f.x = -f.w;
       let dir = 1;
       if (s.faces) { const want = (f.vx < 0 ? -1 : 1) * s.faces; f.face += (want - f.face) * .12; dir = f.face; }
-      const age = f.born ? Math.min(1, (now - f.born) / 1200) : 1, sc = f.born ? 1 + (1 - age) * 1.6 : 1, alpha = .5 + .5 * age;
-      const w = f.w * sc, h = f.h * sc, tilt = s.mode === 'swim' ? Math.sin(f.ph) * .06 * Math.sign(f.vx || 1) : s.mode === 'drift' ? Math.sin(f.ph * .7) * .08 : 0;
+      let age = 1, sc = 1, alpha = 1;
+      if (f.born) { const t = (now - f.born) / 1000;                                   // 0~2.2초 등장 연출
+        if (t < .5) { const k = t / .5; sc = 3.2 * (1 - Math.pow(2, -10 * k) * Math.cos(k * 7)) ; alpha = Math.min(1, k * 2.5); }   // 0→3.2배로 뾱!
+        else if (t < 1.1) sc = 3.2;                                                     // 잠깐 멈춤
+        else if (t < 2.2) { const k = (t - 1.1) / 1.1, e = 1 - Math.pow(1 - k, 3); sc = 3.2 + (1 - 3.2) * e; }   // 제 크기로 줄며 합류
+        else f.born = 0;
+        if (t < .6) { x.save(); x.globalAlpha = (1 - t / .6) * .8; x.strokeStyle = '#fff'; x.lineWidth = 4; x.beginPath(); x.arc(f.x, f.y, 40 + t * 600, 0, 7); x.stroke(); x.restore(); }
+        if (sc >= 3) { x.save(); x.globalAlpha = .35; x.fillStyle = '#8FE3FF'; x.beginPath(); x.arc(f.x, f.y, f.w * 1.6, 0, 7); x.fill(); x.restore(); }   // 뒤 배경 빛
+      }
+      const w = f.w * sc, h = f.h * sc, tilt = f.born ? 0 : s.mode === 'swim' ? Math.sin(f.ph) * .06 * Math.sign(f.vx || 1) : s.mode === 'drift' ? Math.sin(f.ph * .7) * .08 : 0;
       x.save(); x.translate(f.x, f.y); x.rotate(tilt); x.globalAlpha = alpha;
       const sx = s.faces ? (Math.abs(dir) < .08 ? .08 * Math.sign(dir || 1) : dir) : 1;
       if (s.v.length) { x.save(); x.scale(sx, 1); x.drawImage(s.v[f.hue], -w / 2, -h / 2, w, h); x.restore(); }
