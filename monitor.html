@@ -88,7 +88,7 @@ let fishLoaded = false;
 async function loadAllFish(){ const { data } = await sb.from('attendee_public').select('id,last4').order('checked_in_at'); (data || []).forEach(r => Fish.add(r.id, r.last4, false)); }
 new QRCode(document.getElementById('qr'), { text: CHECKIN_URL, width: 132, height: 132, correctLevel: QRCode.CorrectLevel.M });
 
-let last = -1, lastIds = new Set();
+let last = -1, lastIds = new Set(), primed = false;
 
 async function tick(){
   const { data, error } = await sb.from('attendee_public')
@@ -106,9 +106,10 @@ async function tick(){
   }
   const ids = data.map(r => r.id).join();
   if (ids !== [...lastIds].join()) {
-    if (lastIds.size) { const fresh = data.filter(r => !lastIds.has(r.id)).reverse(); fresh.forEach((r, i) => setTimeout(() => { popIn(r.last4); Fish.add(r.id, r.last4, true); }, i * 700)); }
+    if (primed) { const fresh = data.filter(r => !lastIds.has(r.id)).reverse(); fresh.forEach((r, i) => setTimeout(() => { popIn(r.last4); Fish.add(r.id, r.last4, true); }, i * 700)); }
     lastIds = new Set(data.map(r => r.id));
   }
+  primed = true;
 }
 async function countAll(){
   const { count } = await sb.from('attendee_public').select('id', { count: 'exact', head: true });
