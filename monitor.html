@@ -253,7 +253,8 @@ const Fish = (() => {
 const Snd = (() => {
   let ctx, on = false, amb = null, ambGain = null, ambBuf = null, popBuf = null, started = false, mg = null;
   let vol = +(localStorage.getItem('union20_vol') ?? 70) / 100;
-  const master = () => { const c = ac(); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(master()); } return mg; };
+  const master = () => { const c = ac(); if (c.state === 'suspended') c.resume().catch(() => {}); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(c.destination); } return mg; };
+  ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); }, { capture: true }));   // 사용자 입력 시 오디오 깨우기
   const ac = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
   const load = (n, cb) => fetch(n).then(r => r.ok ? r.arrayBuffer() : null).then(ab => ab && ac().decodeAudioData(ab)).then(b => b && cb(b)).catch(() => {});
   function startAmb(){ if (!ambBuf || amb) return; const c = ac(); amb = c.createBufferSource(); amb.buffer = ambBuf; amb.loop = true; ambGain = c.createGain();

@@ -520,7 +520,8 @@ function celebrate(first){
 const Snd = (() => {
   let ctx, on = true, roll, this_hb, mg = null;
   let vol = +(localStorage.getItem('union20_vol') ?? 70) / 100;                                  // 마스터 볼륨 (0~1)
-  const master = () => { const c = ac(); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(master()); } return mg; };
+  const master = () => { const c = ac(); if (c.state === 'suspended') c.resume().catch(() => {}); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(c.destination); } return mg; };
+  ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); }, { capture: true }));   // 사용자 입력 시 오디오 깨우기
   // 같은 폴더에 mp3가 있으면 파일 재생, 없으면 합성음 (fanfare.mp3 / fanfare_first.mp3 / drumroll.mp3)
   const files = {}; ['fanfare', 'fanfare_first', 'curtain', 'tada'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
     a.addEventListener('canplaythrough', () => { files[n] = a; }, { once: true }); a.addEventListener('error', () => {}, { once: true }); });
