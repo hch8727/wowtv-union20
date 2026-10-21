@@ -235,7 +235,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 let PW = sessionStorage.getItem('union20_pw') || '';
-let prizes = [], people = [], winners = [], current = null, lastDraw = [], busy = false;
+let prizes = [], people = [], winners = [], current = null, lastDraw = [], busy = false, hadWinners = false;
 const introduced = new Set(JSON.parse(sessionStorage.getItem('union20_intro') || '[]'));
 const isIntro = p => p && introduced.has(p.id);
 const pname = p => isIntro(p) ? esc(p.name) : '<span style="letter-spacing:.2em;opacity:.7">???</span>';
@@ -266,10 +266,11 @@ async function refresh(){
     sb.from('winners').select('id,attendee_id,prize_id,cancelled,drawn_at').order('drawn_at')
   ]);
   people = a.data || []; winners = w.data || [];
-  if (!winners.length && introduced.size) {                                  // 당첨 기록이 비면(결과 초기화) 상품 소개 상태도 초기화
+  if (hadWinners && !winners.length && introduced.size) {                    // 당첨 기록이 있다가 비면(결과 초기화) 상품 소개 상태도 초기화
     introduced.clear(); sessionStorage.removeItem('union20_intro'); loadPrizes();
     if (current) { $('prizeSel').onchange(); toast('추첨 결과가 초기화되어 상품 소개 상태도 초기화했습니다'); }
   }
+  if (winners.length) hadWinners = true;
   const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
   $('totalN').textContent = people.length;
   $('poolN').textContent = people.filter(p => !won.has(p.id)).length;
