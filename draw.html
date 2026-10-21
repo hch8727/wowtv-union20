@@ -11,6 +11,9 @@
   html,body{height:100%;margin:0}
   body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
        background-image:radial-gradient(ellipse at 50% 120%,#0a6fb4 0%,var(--ink) 50%,var(--ink-deep) 100%)}
+  body.hasbg{background:#07101e center/cover no-repeat;background-image:var(--bgimg)}
+  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.55);pointer-events:none}
+  .wrap,#cd,#dim,#flash,#win,#stage,.toast,.snd{position:relative}
   button{font:inherit;cursor:pointer;border:0;border-radius:14px}
   /* 로그인 */
   #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--ink);z-index:9}
@@ -19,13 +22,13 @@
   #gate button{width:100%;margin-top:12px;padding:14px;font-size:18px;font-weight:700;background:var(--gold);color:#fff}
   #gate .err{color:var(--err);margin-top:10px;min-height:1.4em}
   /* 레이아웃 */
-  .wrap{height:100%;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr;gap:0 40px;padding:36px 56px}
-  header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
-  .brand{width:380px;height:auto;background:#fff;padding:12px 18px;border-radius:12px;box-sizing:content-box}
-  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-  .prize{font-size:30px;color:var(--gold-soft);font-weight:500}
+  .wrap{height:100%;display:grid;grid-template-rows:auto 1fr;padding:28px 48px 36px}
+  header{display:flex;align-items:center;justify-content:space-between}
+  .brand{width:300px;height:auto;background:#fff;padding:10px 16px;border-radius:12px;box-sizing:content-box}
+  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:40px}
+  .prize{font-size:34px;color:var(--gold-soft);font-weight:500}
   .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
-  .names{margin:26px 0 34px;min-height:220px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
+  .names{margin:22px 0 26px;min-height:280px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
   .hint{color:var(--muted);font-size:20px}
   .prize .cnt{display:inline-block;margin-left:14px;font-size:20px;color:#fff;background:rgba(255,255,255,.14);padding:4px 14px;border-radius:999px;font-variant-numeric:tabular-nums}
   .prev{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:-10px 0 18px;min-height:40px}
@@ -33,15 +36,15 @@
   .prev span.cx{text-decoration:line-through;opacity:.4}
   .prev span em{font-style:normal;font-weight:500;font-size:18px;color:var(--gold-soft);letter-spacing:0;margin-left:4px}
   /* 슬롯 릴: 자리별 4개 컬럼 */
-  .reel{--h:250px;display:flex;gap:8px;padding:12px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;transition:background .3s,box-shadow .3s}
-  .dcol{height:var(--h);width:150px;overflow:hidden;border-radius:14px;background:#fff;color:var(--ink);position:relative;
+  .reel{--h:320px;display:flex;gap:8px;padding:12px;border-radius:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;transition:background .3s,box-shadow .3s}
+  .dcol{height:var(--h);width:190px;overflow:hidden;border-radius:14px;background:#fff;color:var(--ink);position:relative;
         box-shadow:inset 0 14px 22px rgba(0,0,0,.16),inset 0 -14px 22px rgba(0,0,0,.16)}
   .dcol::before,.dcol::after{content:"";position:absolute;left:0;right:0;height:34px;pointer-events:none;z-index:2}
-  .dcol::before,.dcol::after{height:56px}
+  .dcol::before,.dcol::after{height:72px}
   .dcol::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}
   .dcol::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
   .dcol .strip{will-change:transform}
-  .dcol .cell{height:var(--h);display:grid;place-items:center;font-size:176px;font-weight:800;font-variant-numeric:tabular-nums}
+  .dcol .cell{height:var(--h);display:grid;place-items:center;font-size:230px;font-weight:800;font-variant-numeric:tabular-nums}
   .dcol.stop{animation:thud .3s cubic-bezier(.2,.9,.3,1.6)}
   .dcol.set{background:var(--gold);color:#fff;box-shadow:0 0 30px rgba(30,194,242,.7)}
   .dcol.set::before{background:linear-gradient(var(--gold),rgba(30,194,242,0))}
@@ -130,11 +133,11 @@
   .stage.shake{animation:shake .5s}
   @keyframes shake{10%,90%{transform:translate(-2px,0)}20%,80%{transform:translate(4px,0)}30%,50%,70%{transform:translate(-8px,0)}40%,60%{transform:translate(8px,0)}}
   .reel{position:relative;z-index:5}
-  #win{position:fixed;left:50%;top:5%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:84px;font-weight:900;color:#fff;letter-spacing:-.02em;
+  #win{position:fixed;left:50%;top:4%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:76px;font-weight:900;color:#fff;letter-spacing:-.02em;
        text-shadow:0 0 30px rgba(30,194,242,.9),0 6px 0 rgba(0,0,0,.25);pointer-events:none}
   #win.on{animation:winpop .9s cubic-bezier(.2,1.2,.3,1) forwards}
   @keyframes winpop{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}60%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(2deg)}100%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}}
-  #win .who{display:block;font-size:64px;margin-top:6px;letter-spacing:.02em}
+  #win .who{display:block;font-size:72px;margin-top:4px;letter-spacing:.02em}
   #win .who small{font-size:30px;opacity:.75;letter-spacing:.12em;margin-left:10px}
   #win.first{color:#f4c84a;text-shadow:0 0 40px rgba(244,200,74,.9),0 6px 0 rgba(0,0,0,.3)}
   /* 카운트다운 */
@@ -148,18 +151,18 @@
   .ctrl button.primary{background:var(--gold);color:#fff;border-color:var(--gold);font-size:24px;padding:18px 48px}
   .ctrl button:disabled{opacity:.35;cursor:default}
   /* 사이드 */
-  aside{display:flex;flex-direction:column;gap:14px;min-height:0}
-  .pool{font-size:18px;color:#dfe4f0}.pool b{color:var(--gold-soft);font-size:24px}
-  select{font:inherit;font-size:18px;font-weight:600;padding:14px 48px 14px 16px;border-radius:12px;border:0;width:100%;background:#fff;color:var(--ink);
+  aside{position:fixed;right:28px;top:28px;width:280px;display:flex;flex-direction:column;gap:10px;background:rgba(0,25,55,.55);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;z-index:3}
+  .pool{font-size:14px;color:#dfe4f0}.pool b{color:var(--gold-soft);font-size:20px}
+  select{font:inherit;font-size:15px;font-weight:600;padding:11px 40px 11px 14px;border-radius:12px;border:0;width:100%;background:#fff;color:var(--ink);
          appearance:none;-webkit-appearance:none;cursor:pointer;
          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%231EC2F2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
          background-repeat:no-repeat;background-position:right 16px center}
   select:focus{outline:3px solid var(--gold);outline-offset:2px}
-  .log{flex:1;overflow:auto;background:rgba(0,0,0,.18);border-radius:14px;padding:14px;font-size:16px}
-  .log h3{margin:0 0 10px;font-size:15px;color:var(--muted);font-weight:500}
-  .log .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .log{max-height:34vh;overflow:auto;background:rgba(0,0,0,.18);border-radius:12px;padding:10px 12px;font-size:13px}
+  .log h3{margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:500}
+  .log .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08)}
   .log .row s{color:var(--muted)}
-  .log .row button{font-size:12px;padding:4px 8px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.2)}
+  .log .row button{font-size:11px;padding:3px 7px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.2)}
   .log .tag{color:var(--gold-soft);margin-right:8px;font-weight:600}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ink);padding:10px 18px;border-radius:10px;font-size:15px;display:none}
   @media (prefers-reduced-motion:reduce){.names.win .name{animation:none}}
@@ -273,6 +276,7 @@ function renderPrize(){
   const mine = winners.filter(w => w.prize_id === current.id);
   const done = mine.filter(w => !w.cancelled).length, total = current.winner_count;
   $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${pname(current)}<span class="cnt">${done} / ${total}명</span>`;
+  $('prev').style.display = total > 1 ? '' : 'none';
   $('prev').innerHTML = mine.map(w => `<span class="${w.cancelled ? 'cx' : ''}">${l4Of(w.attendee_id)} <em>${esc(nameOf(w.attendee_id))}</em></span>`).join('');
   const full = done >= total, locked = !isIntro(current);
   $('btnDraw').disabled = busy || full || locked; $('btnDraw').textContent = full ? '추첨 완료' : locked ? '상품 소개 먼저' : (done ? `${done + 1}번째 추첨` : '추첨');
@@ -302,6 +306,7 @@ $('prizeSel').onchange = () => {
 
 /* ── 상품 소개 무대 ── */
 const stage = $('stage');
+(() => { const tryBg = srcs => { if (!srcs.length) return; const t = new Image(); t.onload = () => { document.body.style.setProperty('--bgimg', `url(${srcs[0]})`); document.body.classList.add('hasbg'); }; t.onerror = () => tryBg(srcs.slice(1)); t.src = srcs[0]; }; tryBg(['draw_bg.jpg', 'stage_bg.jpg']); })();
 (() => { const t = new Image(); t.onload = () => stage.classList.add('hasbg'); t.src = 'stage_bg.jpg'; })();   // stage_bg.jpg 있으면 배경으로
 function renderDoors(){
   const byRank = [...prizes].sort((a, b) => a.rank - b.rank);         // 1등을 가운데, 2·3·4·5… 좌우 번갈아 (4 2 1 3 5)
@@ -428,7 +433,7 @@ async function drawInner(n, append){
 /* ── 슬롯 릴: 4자리를 왼쪽부터 한 자리씩 정지 ── */
 function makeReel(){
   const el = document.createElement('div'); el.className = 'reel';
-  const H = 250, N = 30, DIGIT_GAP = 750;
+  const H = 320, N = 30, DIGIT_GAP = 750;
   const cols = Array.from({length: 4}, () => {
     const col = document.createElement('div'); col.className = 'dcol';
     const strip = document.createElement('div'); strip.className = 'strip'; col.appendChild(strip); el.appendChild(col);
