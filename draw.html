@@ -25,13 +25,13 @@
   .wrap{height:100%;display:grid;grid-template-rows:auto 1fr;padding:28px 48px 36px}
   header{display:flex;align-items:center;justify-content:space-between}
   .brand{width:300px;height:auto;background:#fff;padding:10px 16px;border-radius:12px;box-sizing:content-box}
-  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:90px}
-  .prize{font-size:34px;color:var(--gold-soft);font-weight:500}
-  .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 14px;margin-right:12px;font-size:26px}
-  .names{margin:22px 0 26px;min-height:280px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
+  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:150px}
+  .prize{font-size:26px;color:var(--gold-soft);font-weight:500;margin:-6px 0 14px}
+  .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 12px;margin-right:10px;font-size:22px}
+  .names{margin:0 0 22px;min-height:280px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
   .hint{color:var(--muted);font-size:20px}
-  .prize .cnt{display:inline-block;margin-left:14px;font-size:20px;color:#fff;background:rgba(255,255,255,.14);padding:4px 14px;border-radius:999px;font-variant-numeric:tabular-nums}
-  .prev{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:-10px 0 18px;min-height:40px}
+  .prize .cnt{display:inline-block;margin-left:12px;font-size:17px;color:#fff;background:rgba(255,255,255,.14);padding:4px 14px;border-radius:999px;font-variant-numeric:tabular-nums}
+  .prev{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:0 0 18px;min-height:40px}
   .prev span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 16px;font-size:22px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums}
   .prev span.cx{text-decoration:line-through;opacity:.4}
   .prev span em{font-style:normal;font-weight:500;font-size:18px;color:var(--gold-soft);letter-spacing:0;margin-left:4px}
@@ -133,11 +133,11 @@
   .stage.shake{animation:shake .5s}
   @keyframes shake{10%,90%{transform:translate(-2px,0)}20%,80%{transform:translate(4px,0)}30%,50%,70%{transform:translate(-8px,0)}40%,60%{transform:translate(8px,0)}}
   .reel{position:relative;z-index:5}
-  #win{position:fixed;left:50%;top:9%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:76px;font-weight:900;color:#fff;letter-spacing:-.02em;
+  #win{position:fixed;left:50%;top:7%;transform:translateX(-50%) scale(.5);opacity:0;z-index:6;font-size:64px;font-weight:900;color:#fff;letter-spacing:-.02em;
        text-shadow:0 0 30px rgba(30,194,242,.9),0 6px 0 rgba(0,0,0,.25);pointer-events:none}
   #win.on{animation:winpop .9s cubic-bezier(.2,1.2,.3,1) forwards}
   @keyframes winpop{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}60%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(2deg)}100%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}}
-  #win .who{display:block;font-size:72px;margin-top:4px;letter-spacing:.02em}
+  #win .who{display:block;font-size:72px;margin-top:2px;letter-spacing:.02em}
   #win .who small{font-size:30px;opacity:.75;letter-spacing:.12em;margin-left:10px}
   #win.first{color:#f4c84a;text-shadow:0 0 40px rgba(244,200,74,.9),0 6px 0 rgba(0,0,0,.3)}
   /* 카운트다운 */
@@ -192,8 +192,8 @@
   </header>
 
   <section class="stage">
-    <div class="prize" id="prizeTitle">상품을 선택하세요</div>
     <div class="names" id="names"><span class="hint">스페이스바 또는 추첨 버튼 · 전화번호 뒷자리로 표시됩니다</span></div>
+    <div class="prize" id="prizeTitle">상품을 선택하세요</div>
     <div class="prev" id="prev"></div>
     <div class="ctrl">
       <button id="btnIntro" disabled>상품 소개</button>
