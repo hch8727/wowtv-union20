@@ -80,41 +80,32 @@
 const SUPABASE_URL = 'https://pmpifokwmrkqrmumycjx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY';
 const CHECKIN_URL = location.href.replace(/monitor\.html.*$/, 'checkin.html'); // 배포 주소에 맞게 수정 가능
-const POLL_MS = 2500, RECENT_N = 8;
+const POLL_MS = 2500;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $count = document.getElementById('count'), $status = document.getElementById('status');
-let fishLoaded = false;
 (() => { const t = new Image(); t.onload = () => { document.body.classList.add('hasbg'); window.__bg = true; }; t.src = 'bg.jpg'; })();   // bg.jpg가 있으면 배경으로
-async function loadAllFish(){ const { data } = await sb.from('attendee_public').select('id,last4').order('checked_in_at'); (data || []).forEach(r => Fish.add(r.id, r.last4, false)); }
 new QRCode(document.getElementById('qr'), { text: CHECKIN_URL, width: 132, height: 132, correctLevel: QRCode.CorrectLevel.M });
 
 let last = -1, lastIds = new Set(), primed = false;
 
 async function tick(){
-  const { data, error } = await sb.from('attendee_public')
-    .select('id,last4,checked_in_at', { count: 'exact' })
-    .order('checked_in_at', { ascending: false }).limit(RECENT_N);
-  if (!fishLoaded) { fishLoaded = true; loadAllFish(); }
+  const { data, error } = await sb.from('attendee_public').select('id,last4,checked_in_at').order('checked_in_at');
   if (error) { $status.textContent = '연결 오류: ' + error.message; $status.className = 'status'; return; }
   $status.textContent = '실시간 반영 중'; $status.className = 'status live';
-
-  const total = data.length ? await countAll() : 0;
+  const total = data.length;
   if (total !== last) {
     setCount(total);
     if (last >= 0) { $count.classList.remove('bump'); void $count.offsetWidth; $count.classList.add('bump'); }
     last = total;
   }
-  const ids = data.map(r => r.id).join();
-  if (ids !== [...lastIds].join()) {
-    if (primed) { const fresh = data.filter(r => !lastIds.has(r.id)).reverse(); fresh.forEach((r, i) => setTimeout(() => { popIn(r.last4); Fish.add(r.id, r.last4, true); }, i * 700)); }
-    lastIds = new Set(data.map(r => r.id));
-  }
-  primed = true;
-}
-async function countAll(){
-  const { count } = await sb.from('attendee_public').select('id', { count: 'exact', head: true });
-  return count ?? 0;
+  const cur = new Set(data.map(r => r.id));
+  if (primed) {
+    const fresh = data.filter(r => !lastIds.has(r.id));                       // 새로 온 사람: 뾱
+    fresh.forEach((r, i) => setTimeout(() => { popIn(r.last4); Fish.add(r.id, r.last4, true); }, i * 700));
+    [...lastIds].filter(id => !cur.has(id)).forEach(id => Fish.remove(id));   // 사라진 사람: 거품과 함께 퇴장
+  } else data.forEach(r => Fish.add(r.id, r.last4, false));                   // 첫 로딩
+  lastIds = cur; primed = true;
 }
 /* 7. 숫자 롤업 — 자리별 세로 롤러 */
 function setCount(n){
@@ -218,6 +209,7 @@ const Fish = (() => {
       let dir = 1;
       if (s.faces) { const want = (f.vx < 0 ? -1 : 1) * s.faces; f.face += (want - f.face) * .12; dir = f.face; }
       let age = 1, sc = 1, alpha = 1;
+      if (f.dying) { const k = (now - f.dying) / 700; if (k >= 1) { F.splice(F.indexOf(f), 1); seen.delete(f.id); continue; } sc = 1 - k; alpha = 1 - k; }
       if (f.born) { const t = (now - f.born) / 1000;                                   // 0~2.2초 등장 연출
         if (t < .5) { const k = t / .5; sc = 3.2 * (1 - Math.pow(2, -10 * k) * Math.cos(k * 7)) ; alpha = Math.min(1, k * 2.5); }   // 0→3.2배로 뾱!
         else if (t < 1.1) sc = 3.2;                                                     // 잠깐 멈춤
@@ -226,7 +218,7 @@ const Fish = (() => {
         if (t < .6) { x.save(); x.globalAlpha = (1 - t / .6) * .8; x.strokeStyle = '#fff'; x.lineWidth = 4; x.beginPath(); x.arc(f.x, f.y, 40 + t * 600, 0, 7); x.stroke(); x.restore(); }
         if (sc >= 3) { x.save(); x.globalAlpha = .35; x.fillStyle = '#8FE3FF'; x.beginPath(); x.arc(f.x, f.y, f.w * 1.6, 0, 7); x.fill(); x.restore(); }   // 뒤 배경 빛
       }
-      const w = f.w * sc, h = f.h * sc, tilt = f.born ? 0 : s.mode === 'swim' ? Math.sin(f.ph) * .06 * Math.sign(f.vx || 1) : s.mode === 'drift' ? Math.sin(f.ph * .7) * .08 : 0;
+      const w = f.w * sc, h = f.h * sc, tilt = f.born || f.dying ? 0 : s.mode === 'swim' ? Math.sin(f.ph) * .06 * Math.sign(f.vx || 1) : s.mode === 'drift' ? Math.sin(f.ph * .7) * .08 : 0;
       x.save(); x.translate(f.x, f.y); x.rotate(tilt); x.globalAlpha = alpha;
       const sx = s.faces ? (Math.abs(dir) < .08 ? .08 * Math.sign(dir || 1) : dir) : 1;
       if (s.v.length) { x.save(); x.scale(sx, 1); x.drawImage(s.v[f.hue], -w / 2, -h / 2, w, h); x.restore(); }
@@ -239,7 +231,9 @@ const Fish = (() => {
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  return { add };
+  function remove(id){ const f = F.find(f => f.id === id); if (!f) return; f.dying = performance.now();
+    for (let i = 0; i < 10; i++) B.push({ x: f.x + (Math.random() - .5) * f.w, y: f.y + (Math.random() - .5) * f.h, r: 2 + Math.random() * 5, v: .8 + Math.random() * 1.2, a: Math.random() * 7 }); }
+  return { add, remove };
 })();
 
 setCount(0); tick(); setInterval(tick, POLL_MS);
