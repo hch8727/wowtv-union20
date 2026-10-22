@@ -286,7 +286,7 @@ async function loadPrizes(){
 async function refresh(){
   const [a, w, e] = await Promise.all([
     sb.from('attendee_public').select('id,name,last4'),
-    sb.from('winners').select('id,attendee_id,prize_id,cancelled,drawn_at').order('drawn_at'),
+    sb.from('winners').select('id,attendee_id,prize_id,cancelled,absent,drawn_at').order('drawn_at'),
     sb.from('settings').select('value').eq('key', 'reset_epoch').maybeSingle()
   ]);
   const epoch = e.data?.value || '0', seenEpoch = sessionStorage.getItem('union20_epoch');
@@ -297,7 +297,7 @@ async function refresh(){
   sessionStorage.setItem('union20_epoch', epoch);
   people = a.data || []; winners = w.data || [];
 
-  const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
+  const won = new Set(winners.filter(x => !x.cancelled || x.absent).map(x => x.attendee_id));
   $('totalN').textContent = people.length;
   $('poolN').textContent = people.filter(p => !won.has(p.id)).length;
   renderLog(); renderPrize();
@@ -311,14 +311,14 @@ function renderPrize(){
   const done = mine.filter(w => !w.cancelled).length, total = current.winner_count;
   $('prizeTitle').innerHTML = `<b>${current.rank}등</b>${pname(current)}<span class="cnt">${done} / ${total}명</span>`;
   $('prev').style.display = total > 1 ? '' : 'none';
-  $('prev').innerHTML = mine.map(w => `<span class="${w.cancelled ? 'cx' : ''}">${l4Of(w.attendee_id)} <em>${esc(nameOf(w.attendee_id))}</em></span>`).join('');
+  $('prev').innerHTML = mine.filter(w => !w.cancelled).map(w => `<span>${l4Of(w.attendee_id)} <em>${esc(nameOf(w.attendee_id))}</em></span>`).join('');
   const full = done >= total, locked = !isIntro(current);
   $('btnDraw').disabled = busy || full || locked; $('btnDraw').textContent = full ? '추첨 완료' : locked ? '상품 소개 먼저' : (done ? `${done + 1}번째 추첨` : '추첨');
 }
 function renderLog(){
   if (busy) return;
   $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
-    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)} ${esc(nameOf(w.attendee_id))}</s>` : `${l4Of(w.attendee_id)} <span style="color:var(--muted)">${esc(nameOf(w.attendee_id))}</span>`}</span>
+    <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)} ${esc(nameOf(w.attendee_id))}</s> <small style="color:var(--muted)">${w.absent ? '부재' : '취소'}</small>` : `${l4Of(w.attendee_id)} <span style="color:var(--muted)">${esc(nameOf(w.attendee_id))}</span>`}</span>
     ${w.cancelled ? '' : `<button data-c="${w.id}">취소</button>`}</div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
 }
 $('log').onclick = async e => {
@@ -397,7 +397,7 @@ $('btnDraw').onclick = () => draw(1);
 async function redraw(bad){
   if (!bad || busy) return;
   if (!confirm(`뒷자리 ${bad.last4} 당첨을 부재 처리하고 1명을 다시 뽑을까요?`)) return;
-  await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id });
+  await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id, p_absent: true });
   const idx = lastDraw.indexOf(bad); $('names').querySelectorAll('.reel')[idx]?.remove();
   lastDraw = lastDraw.filter(x => x !== bad);
   draw(1, true);
@@ -427,7 +427,7 @@ async function draw(n, append = false){
 async function drawInner(n, append){
   if (busy || !current) return; busy = true;
   $('btnDraw').disabled = $('btnRedraw').disabled = $('btnNext').disabled = true;
-  const won = new Set(winners.filter(x => !x.cancelled).map(x => x.attendee_id));
+  const won = new Set(winners.filter(x => !x.cancelled || x.absent).map(x => x.attendee_id));
   const pool = people.filter(p => !won.has(p.id));
   if (pool.length < n) { toast('추첨 대상이 부족합니다'); return; }
   const done = winners.filter(w => w.prize_id === current.id && !w.cancelled).length;
@@ -436,6 +436,9 @@ async function drawInner(n, append){
   if (stage.classList.contains('on')) { closeStage(); await new Promise(r => setTimeout(r, 1800)); }
   preloadPop(current.image_url);
   Snd.duck(true);
+  // 이전 추첨 잔재 정리
+  $('win').className = ''; $('dim').classList.remove('on'); document.getElementById('popcv')?.remove();
+  if (!append) { lastDraw = []; $('names').className = 'names'; }
   await countdown();
   const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
   const box = $('names'); box.className = 'names rolling';
