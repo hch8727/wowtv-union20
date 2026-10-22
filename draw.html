@@ -25,7 +25,7 @@
   .wrap{height:100%;display:grid;grid-template-rows:auto 1fr;padding:28px 48px 36px}
   header{display:flex;align-items:center;justify-content:space-between}
   .brand{width:300px;height:auto;background:#fff;padding:10px 16px;border-radius:12px;box-sizing:content-box}
-  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:150px}
+  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:180px}
   .prize{font-size:26px;color:var(--gold-soft);font-weight:500;margin:-6px 0 14px}
   .prize b{display:inline-block;background:var(--gold);color:#fff;border-radius:10px;padding:2px 12px;margin-right:10px;font-size:22px}
   .names{margin:0 0 22px;min-height:280px;display:flex;flex-wrap:wrap;gap:22px 30px;justify-content:center;align-items:center;max-width:1200px}
@@ -139,6 +139,11 @@
   @keyframes winpop{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}60%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(2deg)}100%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}}
   #win .who{display:block;font-size:72px;margin-top:2px;letter-spacing:.02em}
   #win .who small{font-size:30px;opacity:.75;letter-spacing:.12em;margin-left:10px}
+  #win .who .buddy{height:120px;width:auto;vertical-align:middle;margin-right:18px;animation:buddy 1.6s ease-in-out .4s infinite alternate;filter:drop-shadow(0 8px 16px rgba(0,0,0,.4))}
+  @keyframes buddy{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-10px) rotate(4deg)}}
+  #win .bn{display:block;font-size:22px;font-weight:600;color:var(--gold-soft);margin-top:4px;letter-spacing:.04em;text-shadow:none;text-align:center}
+  #win{text-align:center;white-space:nowrap}
+  #win.first .bn{color:#fff}
   #win.first{color:#f4c84a;text-shadow:0 0 40px rgba(244,200,74,.9),0 6px 0 rgba(0,0,0,.3)}
   /* 카운트다운 */
   #cd{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,30,55,.6);z-index:5;font-size:min(40vw,420px);font-weight:900;color:#fff}
@@ -236,6 +241,10 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 let PW = sessionStorage.getItem('union20_pw') || '';
 let prizes = [], people = [], winners = [], current = null, lastDraw = [], busy = false;
+const SPECIES = [['clown', 13, '흰동가리'], ['blue', 11, '파랑물고기'], ['tang', 10, '노랑파랑 열대어'], ['purple', 9, '보라 열대어'], ['turtle', 8, '바다거북'], ['jelly', 8, '해파리'], ['ray', 7, '가오리'], ['squid', 6, '오징어'], ['seahorse', 6, '해마'], ['shrimp', 6, '새우'], ['octopus', 5, '문어'], ['crab', 5, '꽃게'], ['star', 4, '불가사리'], ['shark', 1, '상어'], ['sunfish', 1, '개복치']];
+const hash = n => { let h = n ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };
+const buddyOf = id => { let r = hash(id) % 100; for (const [k, p, n] of SPECIES) { r -= p; if (r < 0) return [k, n]; } return SPECIES[0]; };
+SPECIES.forEach(([k]) => { const i = new Image(); i.src = k + '.png'; });   // 미리 로드
 const introduced = new Set(JSON.parse(sessionStorage.getItem('union20_intro') || '[]'));
 const isIntro = p => p && introduced.has(p.id);
 const pname = p => isIntro(p) ? esc(p.name) : '<span style="letter-spacing:.2em;opacity:.7">???</span>';
@@ -433,7 +442,9 @@ async function drawInner(n, append){
   Snd.drumroll(false); Snd.fanfare(isFirst); setTimeout(() => Snd.applause(isFirst), 900);
   const fl = $('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
   const st = document.querySelector('.stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake');
-  const w = $('win'); const nm = data[0]?.name ? ` ${esc(data[0].name)}` : ''; w.innerHTML = (isFirst ? '🏆 1등 당첨!' : '🎉 당첨!') + `<span class="who">${nm} <small>${data[0]?.last4 || ''}</small></span>`; w.className = 'on' + (isFirst ? ' first' : '');
+  const w = $('win'); const nm = data[0]?.name ? ` ${esc(data[0].name)}` : ''; const [bk, bn] = buddyOf(data[0]?.attendee_id || 0); const rare = bk === 'shark' || bk === 'sunfish';
+  w.innerHTML = (isFirst ? '🏆 1등 당첨!' : '🎉 당첨!') + `<span class="who"><img class="buddy" src="${bk}.png" alt="${bn}">${nm} <small>${data[0]?.last4 || ''}</small></span><span class="bn">${rare ? '✨ 레어 ' : ''}${bn}</span>`;
+  w.className = 'on' + (isFirst ? ' first' : '');
   celebrate(isFirst);
   if (current.image_url) popcorn(current.image_url, isFirst ? 18 : 12);
   lastDraw = append ? [...lastDraw, ...data] : data;
