@@ -182,6 +182,12 @@
   body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
   input,textarea{-webkit-user-select:text;user-select:text}
+  /* 좌상단 간판: 로고 + 행사명 + 시계 */
+  .sign{display:flex;align-items:center;gap:20px;padding:12px 22px 12px 14px;border-radius:20px;background:rgba(0,25,55,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);pointer-events:none}
+  .sign .lg{background:#fff;border-radius:10px;padding:8px 14px}.sign .lg img{height:34px;width:auto;display:block}
+  .sign .r{display:flex;flex-direction:column;gap:2px;border-left:1px solid rgba(255,255,255,.18);padding-left:20px}
+  .sign .t{font-size:14px;color:#8fe3ff;font-weight:600;letter-spacing:.02em}
+  .sign .c{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#fff}
 </style>
 </head>
 <body>
@@ -190,7 +196,7 @@
 
 <div class="wrap">
   <header>
-    <img class="brand" src="logo.png" alt="한국경제TV">
+    <div class="sign"><div class="lg"><img src="logo.png" alt="한국경제TV"></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
   </header>
 
   <section class="stage">
@@ -613,6 +619,8 @@ function toast(t){ const el = $('toast'); el.textContent = t; el.style.display =
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
     const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m; });
 })();
+/* 간판 시계 */
+(() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
 </script>
 </body>
 </html>

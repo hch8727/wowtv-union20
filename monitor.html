@@ -73,6 +73,12 @@
   body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
   input,textarea{-webkit-user-select:text;user-select:text}
+  /* 좌상단 간판: 로고 + 행사명 + 시계 */
+  .sign{display:flex;align-items:center;gap:20px;padding:12px 22px 12px 14px;border-radius:20px;background:rgba(0,25,55,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);pointer-events:none}
+  .sign .lg{background:#fff;border-radius:10px;padding:8px 14px}.sign .lg img{height:34px;width:auto;display:block}
+  .sign .r{display:flex;flex-direction:column;gap:2px;border-left:1px solid rgba(255,255,255,.18);padding-left:20px}
+  .sign .t{font-size:14px;color:#8fe3ff;font-weight:600;letter-spacing:.02em}
+  .sign .c{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#fff}
 </style>
 </head>
 <body>
@@ -81,7 +87,7 @@
 <div id="pop"></div>
 <div class="wrap">
   <header>
-    <img class="brand" src="logo.png" alt="한국경제TV">
+    <div class="sign"><div class="lg"><img src="logo.png" alt="한국경제TV"></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
   <div class="panel">
     <div><div class="label">지금까지 출석하신 분</div><div class="countRow"><span class="count" id="count">0</span><span class="unit">명</span></div></div>
     <div class="qrbox"><div class="qr" id="qr"></div><p><b>QR 출석</b>카메라 · 카카오톡 스캔</p></div>
@@ -172,7 +178,7 @@ const Fish = (() => {
     for (const f of F) { f.x = f.x / ow * W; f.y = f.y / oh * H; f.ty = f.ty / oh * H; if (SP[f.k].mode === 'walk') f.ty = H - FLOOR - f.h * .35; }
     for (const b of B) { b.x = b.x / ow * W; b.y = b.y / oh * H; } }, 150); });
   for (let i = 0; i < 36; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1.5 + Math.random() * 5, v: .25 + Math.random() * .6, a: Math.random() * 7 });
-  const zones = () => [{ x: W * .78, y: H * .13, rx: W * .26, ry: H * .2 }, { x: W * .14, y: H * .07, rx: W * .16, ry: H * .1 }];   // 우상단 패널·로고 영역은 비켜 다님
+  const zones = () => [{ x: W * .78, y: H * .13, rx: W * .26, ry: H * .2 }, { x: W * .18, y: H * .08, rx: W * .22, ry: H * .13 }];   // 우상단 패널·로고 영역은 비켜 다님
   const inZone = (px, py) => zones().some(z => ((px - z.x) / z.rx) ** 2 + ((py - z.y) / z.ry) ** 2 < 1);
   function add(id, l4, fresh){
     if (seen.has(id)) return; seen.add(id); sortDirty = true;
@@ -325,6 +331,8 @@ setCount(0); tick(); setInterval(tick, POLL_MS);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
     const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m; });
 })();
+/* 간판 시계 */
+(() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
 </script>
 </body>
 </html>
