@@ -98,6 +98,8 @@
   @keyframes seam{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:scaleY(1)}}
   .dr.open .seam{opacity:0;transition:opacity .4s .6s}
   .dr.open .inner::after{content:"";position:absolute;inset:0;background:#fff;opacity:0;animation:doorflash 1.1s ease-out .9s;pointer-events:none;z-index:3}
+  .dr .lit{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity .8s 1.2s;background:radial-gradient(ellipse 70% 60% at 50% 30%,#ffffff,#dff6ff 45%,#9fdcff 100%)}
+  .dr.open .lit{opacity:1}
   @keyframes doorflash{0%{opacity:0}25%{opacity:.95}100%{opacity:0}}
   .dr .glow{position:absolute;inset:0;opacity:0;transition:opacity 1s .8s;background:radial-gradient(ellipse at 50% 20%,rgba(255,255,255,.4),rgba(90,220,255,.18) 50%,transparent 75%)}
   .dr.open .glow{opacity:1}
@@ -348,7 +350,7 @@ function renderDoors(){
   const doneSet = new Set(list.filter(p => winners.filter(w => w.prize_id === p.id && !w.cancelled).length >= p.winner_count).map(p => p.id));
   $('doors').innerHTML = list.map((p, i) => `<div class="dr ${doneSet.has(p.id) ? 'done' : ''}" data-id="${p.id}" data-d="${Math.min(3, Math.abs(i - mid))}" style="--s:${i < mid ? 1 : -1}">
     <div class="plate">${p.rank}<small>등</small></div>
-    <div class="frame"><div class="inner"><div class="spot"></div><div class="glow"></div><div class="curt l"></div><div class="curt r"></div><div class="seam"></div></div></div></div>`).join('');
+    <div class="frame"><div class="inner"><div class="lit"></div><div class="spot"></div><div class="glow"></div><div class="curt l"></div><div class="curt r"></div><div class="seam"></div></div></div></div>`).join('');
 }
 function openStage(){
   if (!current) return;
@@ -551,7 +553,7 @@ const Snd = (() => {
   const master = () => { const c = ac(); if (c.state === 'suspended') c.resume().catch(() => {}); if (!mg) { mg = c.createGain(); mg.gain.value = vol; mg.connect(c.destination); } return mg; };
   ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); }, { capture: true }));   // 사용자 입력 시 오디오 깨우기
   // 같은 폴더에 mp3가 있으면 파일 재생, 없으면 합성음 (fanfare.mp3 / fanfare_first.mp3 / drumroll.mp3)
-  const files = {}; ['fanfare', 'fanfare_first', 'curtain', 'door', 'unlock', 'tada', 'applause'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
+  const files = {}; ['fanfare', 'fanfare_first', 'door', 'unlock', 'tada', 'applause'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto';
     a.addEventListener('canplaythrough', () => { files[n] = a; }, { once: true }); a.addEventListener('error', () => {}, { once: true }); });
   const play = (n, v = 1) => { const a = files[n]; if (!a || !on) return false; a.currentTime = 0; a.volume = Math.min(1, v * vol); a.play().catch(() => {}); return true; };
   const stop = n => { const a = files[n]; if (a) { a.pause(); a.currentTime = 0; } };
@@ -576,7 +578,7 @@ const Snd = (() => {
     g.gain.setValueAtTime(gain, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur); o.connect(g).connect(master()); o.start(); o.stop(c.currentTime + dur); };
   const safe = fn => (...a) => { try { return fn(...a); } catch (e) { console.warn('sound', e); } };
   return {
-    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'curtain', 'door', 'unlock', 'tada', 'applause'].forEach(stop); bgmStop(); clearInterval(clapT); } else bgmStart(); return on; },
+    toggle(){ on = !on; if (!on) { this.drumroll(false); clearInterval(this_hb); ['fanfare', 'fanfare_first', 'door', 'unlock', 'tada', 'applause'].forEach(stop); bgmStop(); clearInterval(clapT); } else bgmStart(); return on; },
     bgm(){ bgmStart(); }, duck(d){ bgmDuck(d); },
     setVol(v){ vol = v; localStorage.setItem('union20_vol', Math.round(v * 100)); if (mg) mg.gain.setTargetAtTime(v, ac().currentTime, .05); }, getVol(){ return vol; },
     beep: safe(last => { if (on) tone(last ? 880 : 660, .18, .25, 'square'); }),
@@ -590,7 +592,7 @@ const Snd = (() => {
       this_hb = setInterval(() => { tone(55, .18, .5, 'sine'); setTimeout(() => tone(50, .14, .35, 'sine'), 180); i++; }, Math.max(380, 760 - i * 0)); }),
     unlock: safe(() => { if (!on) return; if (play('unlock', .9)) return; const c = ac();                   // 철컥 ×2 + 전자음
       [0, .18].forEach(t => setTimeout(() => { noise(.05, .5, 3000); tone(140, .08, .3, 'square'); }, t * 1000)); setTimeout(() => tone(1320, .25, .12, 'sine'), 420); }),
-    doors: safe(() => { if (!on) return; if (play('door', .9) || play('curtain', .9)) return; const c = ac();
+    doors: safe(() => { if (!on) return; if (play('door', .9)) return; const c = ac();
       // 유압 "프쉬-" + 저음 모터 + 끝에 쿵
       noise(.9, .35, 1800); const o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(60, c.currentTime); o.frequency.linearRampToValueAtTime(90, c.currentTime + 1.4);
       const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 240; g.gain.setValueAtTime(.001, c.currentTime); g.gain.exponentialRampToValueAtTime(.25, c.currentTime + .2); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + 1.6);
