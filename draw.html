@@ -63,7 +63,7 @@
   #stage.hasbg::before{content:"";position:absolute;inset:0;background:rgba(2,10,30,.3)}
   #stage.hasbg .floor{display:none}
   #stage.hasbg .doors{top:17%;bottom:16%}
-  #stage.hasbg #stItem{bottom:9%}
+  #stage.hasbg #stItem{bottom:12%}
   #stage .floor{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(#0e1b30,#05090f);
                 box-shadow:inset 0 30px 50px rgba(0,0,0,.6)}
   #stage .floor::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 2px,transparent 2px 120px)}
@@ -100,7 +100,7 @@
   #stItem{position:absolute;left:50%;bottom:11%;z-index:5;text-align:center;opacity:0;transform:translate(-50%,0) scale(.3);
           transition:transform 1.3s cubic-bezier(.2,.9,.3,1.08) 1s,opacity .8s 1s,left 1.3s cubic-bezier(.2,.9,.3,1.08) 1s;pointer-events:none}
   #stage.open #stItem{opacity:1;transform:translate(-50%,0) scale(1)}
-  #stItem img{max-width:min(46vw,760px);max-height:48vh;filter:brightness(0) drop-shadow(0 0 30px rgba(30,194,242,.6));transition:filter 1.5s ease 2.3s}
+  #stItem img{height:min(54vh,720px);width:auto;max-width:46vw;object-fit:contain;filter:brightness(0) drop-shadow(0 0 30px rgba(30,194,242,.6));transition:filter 1.5s ease 2.3s}
   #stage.open.lit #stItem img{filter:brightness(1) drop-shadow(0 30px 60px rgba(0,0,0,.75)) drop-shadow(0 0 40px rgba(255,215,120,.35))}
   #stItem .t{opacity:0;transition:opacity .8s 3.2s}
   #stage.open.lit #stItem .t{opacity:1}
