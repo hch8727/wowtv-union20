@@ -139,7 +139,7 @@
 </main>
 <div id="modal"><form class="box" id="mForm">
   <h3 id="mTitle"></h3><p id="mDesc"></p>
-  <label for="mPw">관리자 비밀번호</label><input id="mPw" type="password" autocomplete="current-password">
+  <div><label for="mPw">관리자 비밀번호</label><input id="mPw" type="password" autocomplete="current-password"></div>
   <div id="mWordWrap" style="display:none"><label for="mWord">확인 문구 <b id="mWordHint"></b></label><input id="mWord" autocomplete="off"></div>
   <div class="err" id="mErr"></div>
   <div class="btns"><button type="button" id="mCancel">취소</button><button type="submit" class="danger" id="mOk">실행</button></div>
@@ -161,6 +161,16 @@ function toast(t){ const el = $('toast'); el.textContent = t; el.style.display =
 
 let PW = sessionStorage.getItem('union20_pw') || '', att = [], prizes = [], editId = null;
 
+/* 단순 확인 모달 */
+function ask(title, text, okLabel = '확인'){
+  return new Promise(res => {
+    const m = $('modal'); $('mTitle').textContent = title; $('mDesc').textContent = text; $('mErr').textContent = '';
+    $('mPw').parentElement.style.display = 'none'; $('mWordWrap').style.display = 'none'; $('mOk').textContent = okLabel;
+    m.classList.add('on'); setTimeout(() => $('mOk').focus(), 50);
+    const close = v => { m.classList.remove('on'); $('mForm').onsubmit = $('mCancel').onclick = null; $('mPw').parentElement.style.display = ''; $('mOk').textContent = '실행'; res(v); };
+    $('mCancel').onclick = () => close(false); $('mForm').onsubmit = e => { e.preventDefault(); close(true); };
+  });
+}
 /* 위험 작업 확인 모달: 비밀번호(마스킹) + 선택적 확인 문구 */
 function confirmDanger(title, desc, word){
   return new Promise(res => {
@@ -215,7 +225,7 @@ $('q').oninput = renderAtt;
 $('attBody').onclick = async e => {
   const id = e.target.dataset.del; if (!id) return;
   const a = att.find(x => x.id == id);
-  if (!confirm(`${a.name} 님을 명단에서 삭제할까요? 당첨 기록도 함께 삭제됩니다.`)) return;
+  if (!await ask('출석자 삭제', `${a.name} 님을 명단에서 삭제할까요? 당첨 기록도 함께 삭제됩니다.`, '삭제')) return;
   await rpc('admin_delete_attendee', { p_id: +id }); loadAtt();
 };
 $('mAdd').onclick = async () => {
@@ -262,7 +272,7 @@ function resetPrizeForm(){ editId = null; ['pOrder','pRank','pName','pImg'].forE
 $('prizeBody').onclick = async e => {
   const eid = e.target.dataset.e, did = e.target.dataset.d;
   if (eid) { const p = prizes.find(x => x.id == eid); editId = p.id; $('pOrder').value = p.draw_order; $('pRank').value = p.rank; $('pName').value = p.name; $('pCount').value = p.winner_count; $('pImg').value = p.image_url || ''; $('pImg').oninput(); $('pSave').textContent = '저장'; $('pCancel').style.display = ''; }
-  if (did && confirm('이 상품을 삭제할까요?')) { await rpc('admin_prize_delete', { p_id: +did }); loadPrizes(); }
+  if (did && await ask('상품 삭제', '이 상품을 삭제할까요?', '삭제')) { await rpc('admin_prize_delete', { p_id: +did }); loadPrizes(); }
 };
 
 /* 설정 */

@@ -130,6 +130,16 @@
   #stage .dimmer{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity 1s .8s;z-index:4;pointer-events:none}
   #stage .close{position:absolute;right:28px;bottom:24px;z-index:6;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);padding:10px 18px;font-size:15px;opacity:0;transition:opacity .5s 2s}
   #stage.open .close{opacity:1}
+  /* 확인 모달 */
+  #ask{position:fixed;inset:0;background:rgba(0,10,30,.6);backdrop-filter:blur(4px);display:none;place-items:center;z-index:70}
+  #ask.on{display:grid}
+  #ask .box{background:rgba(0,25,55,.85);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:26px 30px;width:min(520px,92vw);box-shadow:0 30px 80px rgba(0,0,0,.6);text-align:center}
+  #ask h3{margin:0 0 8px;font-size:24px;font-weight:800}
+  #ask p{margin:0 0 22px;color:#dfe4f0;font-size:17px;line-height:1.5}
+  #ask .btns{display:flex;gap:10px;justify-content:center}
+  #ask button{padding:12px 28px;font-size:17px;font-weight:700;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+  #ask button.ok{background:var(--gold);border-color:var(--gold)}
+  #ask button.danger{background:#c0392b;border-color:#c0392b}
   /* 마지막 자리 연출 */
   #dim{position:fixed;inset:0;background:radial-gradient(circle at 50% 46%,transparent 240px,rgba(0,10,25,.88) 620px);opacity:0;pointer-events:none;z-index:4;transition:opacity .6s}
   #dim.on{opacity:1}
@@ -230,6 +240,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <div id="cd"></div>
+<div id="ask"><div class="box"><h3 id="askT"></h3><p id="askP"></p><div class="btns"><button id="askNo">취소</button><button id="askOk" class="ok">확인</button></div></div></div>
 <div id="stage">
   <div class="doors" id="doors"></div>
   <div class="floor"></div>
@@ -251,6 +262,14 @@ const SUPABASE_URL = 'https://pmpifokwmrkqrmumycjx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
+function ask(title, text, okLabel = '확인', danger = false){
+  return new Promise(res => {
+    const m = $('ask'); $('askT').textContent = title; $('askP').textContent = text; $('askOk').textContent = okLabel; $('askOk').className = danger ? 'danger' : 'ok';
+    m.classList.add('on'); const close = v => { m.classList.remove('on'); $('askOk').onclick = $('askNo').onclick = null; document.removeEventListener('keydown', key, true); res(v); };
+    const key = e => { if (e.key === 'Escape') { e.stopPropagation(); close(false); } if (e.key === 'Enter') { e.stopPropagation(); close(true); } };
+    document.addEventListener('keydown', key, true); $('askOk').onclick = () => close(true); $('askNo').onclick = () => close(false); setTimeout(() => $('askOk').focus(), 50);
+  });
+}
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 let PW = sessionStorage.getItem('union20_pw') || '';
@@ -323,7 +342,7 @@ function renderLog(){
 }
 $('log').onclick = async e => {
   const id = e.target.dataset.c; if (!id) return;
-  if (!confirm('뒷자리 ' + l4Of(winners.find(w => w.id == id).attendee_id) + ' 당첨을 취소할까요?')) return;
+  const wv = winners.find(w => w.id == id); if (!await ask('당첨 취소', `${l4Of(wv.attendee_id)} ${nameOf(wv.attendee_id)} 님의 당첨을 취소할까요? 이 사람은 다시 추첨 대상에 포함됩니다.`, '취소 처리', true)) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +id }); refresh();
 };
 
@@ -396,7 +415,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStage()
 $('btnDraw').onclick = () => draw(1);
 async function redraw(bad){
   if (!bad || busy) return;
-  if (!confirm(`뒷자리 ${bad.last4} 당첨을 부재 처리하고 1명을 다시 뽑을까요?`)) return;
+  if (!await ask('부재 → 재추첨', `${bad.last4} ${bad.name || ''} 님을 부재 처리하고 1명을 다시 뽑을까요? 부재자는 이후 추첨에서 제외됩니다.`, '재추첨')) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id, p_absent: true });
   const idx = lastDraw.indexOf(bad); $('names').querySelectorAll('.reel')[idx]?.remove();
   lastDraw = lastDraw.filter(x => x !== bad);
@@ -416,7 +435,7 @@ $('btnNext').onclick = () => {
   if (prizes[i + 1]) { $('prizeSel').value = prizes[i + 1].id; $('prizeSel').onchange(); }
 };
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' && !$('btnDraw').disabled && !busy) { e.preventDefault(); $('btnDraw').click(); }
+  if (e.code === 'Space' && !$('btnDraw').disabled && !busy && !$('ask').classList.contains('on')) { e.preventDefault(); $('btnDraw').click(); }
 });
 
 async function draw(n, append = false){
