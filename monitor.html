@@ -129,16 +129,21 @@ const Fish = (() => {
   const c = document.getElementById('bg'), x = c.getContext('2d'); let W, H; const F = [], B = []; const seen = new Set();
   // 종류별 설정: 이미지, 가로세로비, 번호 위치(비율), 원래 바라보는 방향, 움직임, 활동 수심(화면 비율), 크기
   const SP = {
-    clown:    { src: 'clown.png',    ar: 209 / 277, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [110, 150], p: 15, name: '물고기' },
-    blue:     { src: 'blue.png',     ar: 192 / 240, belly: { x: .5, y: .72 },  faces: 1,  mode: 'swim',  zone: [.08, .85], w: [105, 145], p: 15, name: '파랑물고기' },
-    turtle:   { src: 'turtle.png',   ar: 243 / 281, belly: { x: .4, y: .5 },   faces: 1,  mode: 'swim',  zone: [.1, .8],   w: [130, 170], p: 11, name: '바다거북' },
-    ray:      { src: 'ray.png',      ar: 307 / 309, belly: { x: .46, y: .52 }, faces: 1,  mode: 'swim',  zone: [.15, .8],  w: [150, 200], p: 9,  name: '가오리', slow: .6 },
-    jelly:    { src: 'jelly.png',    ar: 308 / 189, belly: { x: .5, y: .5 },   faces: 0,  mode: 'drift', zone: [.06, .5],  w: [80, 110],  p: 10, name: '해파리' },
-    seahorse: { src: 'seahorse.png', ar: 283 / 147, belly: { x: .52, y: .5 },  faces: -1, mode: 'hover', zone: [.55, .82], w: [65, 90],   p: 9,  name: '해마' },
-    octopus:  { src: 'octopus.png',  ar: 266 / 237, belly: { x: .5, y: .22 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [120, 150], p: 8,  name: '문어' },
-    crab:     { src: 'crab.png',     ar: 224 / 276, belly: { x: .5, y: .68 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [110, 140], p: 8,  name: '꽃게' },
-    star:     { src: 'star.png',     ar: 231 / 239, belly: { x: .5, y: .7 },   faces: 0,  mode: 'walk',  zone: [1, 1],     w: [90, 120],  p: 7,  name: '불가사리', slow: .3 },
-    puffer:   { src: 'puffer.png',   ar: 198 / 244, belly: { x: .5, y: .72 },  faces: -1, mode: 'swim',  zone: [.1, .8],   w: [100, 130], p: 8,  name: '복어', slow: .5, puff: true },
+    clown:    { src: 'clown.png',    ar: 164 / 215, belly: { x: .5, y: .66 },  faces: -1, mode: 'swim',  zone: [.08, .85], w: [105, 145], p: 13, name: '흰동가리' },
+    blue:     { src: 'blue.png',     ar: 163 / 238, belly: { x: .48, y: .66 }, faces: -1, mode: 'swim',  zone: [.08, .85], w: [110, 150], p: 11, name: '파랑물고기' },
+    tang:     { src: 'tang.png',     ar: 173 / 217, belly: { x: .52, y: .62 }, faces: -1, mode: 'swim',  zone: [.08, .85], w: [105, 145], p: 10, name: '노랑파랑 열대어' },
+    purple:   { src: 'purple.png',   ar: 166 / 232, belly: { x: .48, y: .64 }, faces: -1, mode: 'swim',  zone: [.08, .85], w: [110, 150], p: 9,  name: '보라 열대어' },
+    turtle:   { src: 'turtle.png',   ar: 231 / 284, belly: { x: .42, y: .45 }, faces: 1,  mode: 'swim',  zone: [.1, .8],   w: [130, 170], p: 8,  name: '바다거북', slow: .8 },
+    jelly:    { src: 'jelly.png',    ar: 219 / 167, belly: { x: .5, y: .48 },  faces: 0,  mode: 'drift', zone: [.06, .5],  w: [85, 115],  p: 8,  name: '해파리' },
+    ray:      { src: 'ray.png',      ar: 186 / 254, belly: { x: .5, y: .55 },  faces: -1, mode: 'swim',  zone: [.15, .8],  w: [150, 200], p: 7,  name: '가오리', slow: .6 },
+    squid:    { src: 'squid.png',    ar: 267 / 211, belly: { x: .5, y: .3 },   faces: 0,  mode: 'hover', zone: [.15, .75], w: [90, 120],  p: 6,  name: '오징어', dash: true },
+    seahorse: { src: 'seahorse.png', ar: 231 / 128, belly: { x: .5, y: .5 },   faces: -1, mode: 'hover', zone: [.55, .82], w: [60, 85],   p: 6,  name: '해마' },
+    shrimp:   { src: 'shrimp.png',   ar: 158 / 214, belly: { x: .55, y: .6 },  faces: -1, mode: 'hover', zone: [.6, .85],  w: [95, 125],  p: 6,  name: '새우', jerk: true },
+    octopus:  { src: 'octopus.png',  ar: 226 / 298, belly: { x: .5, y: .25 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [130, 160], p: 5,  name: '문어' },
+    crab:     { src: 'crab.png',     ar: 220 / 256, belly: { x: .5, y: .68 },  faces: 0,  mode: 'walk',  zone: [1, 1],     w: [115, 145], p: 5,  name: '꽃게' },
+    star:     { src: 'star.png',     ar: 187 / 190, belly: { x: .5, y: .7 },   faces: 0,  mode: 'walk',  zone: [1, 1],     w: [90, 120],  p: 4,  name: '불가사리', slow: .3 },
+    shark:    { src: 'shark.png',    ar: 188 / 286, belly: { x: .5, y: .6 },   faces: -1, mode: 'swim',  zone: [.15, .75], w: [240, 280], p: 1,  name: '상어', slow: .55, scary: true },
+    sunfish:  { src: 'sunfish.png',  ar: 272 / 204, belly: { x: .5, y: .58 },  faces: -1, mode: 'drift', zone: [.2, .7],   w: [150, 180], p: 1,  name: '개복치', slow: .5 },
   };
   const HUES = [0, -22, 22];                                                                 // 색 변형 3종, 미리 렌더링해서 재사용
   for (const k in SP) { const s = SP[k]; s.img = new Image(); s.img.src = s.src; s.v = [];
@@ -185,11 +190,17 @@ const Fish = (() => {
     for (const b of B) { b.y -= b.v; b.x += Math.sin(b.a += .02) * .3; if (b.y < -5) { b.y = H + 5; b.x = Math.random() * W; }
       x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(200,240,255,.45)'; x.lineWidth = 1.2; x.stroke(); x.beginPath(); x.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .3, 0, 7); x.fillStyle = 'rgba(255,255,255,.5)'; x.fill(); }
     const zs = zones(); const mouseOn = now - M.t < 2500;        // 마우스가 멈춘 지 2.5초 지나면 무시
+    const sharks = F.filter(f => SP[f.k].scary && !f.dying);
     // 바닥 생물이 앞에 오도록 정렬
-    F.sort((a, b) => (SP[a.k].mode === 'walk') - (SP[b.k].mode === 'walk') || (!!a.born) - (!!b.born));
+    F.sort((a, b) => (SP[a.k].mode === 'walk') - (SP[b.k].mode === 'walk') || (!!a.born) - (!!b.born) || (SP[b.k].scary ? 1 : 0) - (SP[a.k].scary ? 1 : 0));
     for (const f of F) {
       const s = SP[f.k]; f.ph += .035;
       if (f.born && now - f.born < 1100) { f.x = W * .5; f.y = H * .46; }
+      if (!s.scary && !f.born) for (const sh of sharks) {                 // 상어가 가까이 오면 달아남
+        const dx = f.x - sh.x, dy = f.y - sh.y, d2 = dx * dx + dy * dy, R = 260;
+        if (d2 < R * R) { const d = Math.sqrt(d2) || 1, k = (1 - d / R) * .7;
+          if (s.mode === 'walk') f.vx += (dx / d) * k * 1.2; else { f.vx += (dx / d) * k; if (s.mode === 'swim') f.vy += (dy / d) * k; else f.ty += (dy / d) * k * 5; } f.tvx = 0; }
+      }
       if (mouseOn && !f.born) {                                            // 마우스 가까이 오면 놀라서 달아남
         const dx = f.x - M.x, dy = f.y - M.y, d2 = dx * dx + dy * dy, R = 220;
         if (d2 < R * R) { const d = Math.sqrt(d2) || 1, k = (1 - d / R) * .9;
@@ -206,8 +217,11 @@ const Fish = (() => {
         f.x += f.vx * .6; f.y = f.ty + Math.sin(f.ph * .9) * 28; if (Math.random() < .002) f.tvx = -Math.sign(f.vx) * f.spd;
         f.ty += (Math.random() - .5) * .3; f.ty = Math.max(H * s.zone[0], Math.min(H * s.zone[1], f.ty));
         if (inZone(f.x, f.ty)) f.ty -= .8;
-      } else if (s.mode === 'hover') {                        // 해마: 낮은 곳에서 살랑살랑
-        f.x += f.vx * .5; f.ty = Math.max(H * s.zone[0], Math.min(H * s.zone[1], f.ty)); f.y = f.ty + Math.sin(f.ph * 1.3) * 10; if (Math.random() < .003) f.tvx = -Math.sign(f.vx) * f.spd;
+      } else if (s.mode === 'hover') {                        // 해마·오징어·새우: 제자리 살랑 + 느린 이동
+        if (s.dash && !f.dashT && Math.random() < .004) f.dashT = 40;                          // 오징어: 가끔 위로 쏘듯
+        if (f.dashT) { f.ty -= f.dashT * .25; f.dashT--; } else if (s.dash) f.ty += .4;
+        if (s.jerk) { f.x += Math.max(0, Math.sin(f.ph * 2.2)) * f.vx * 3; }                   // 새우: 톡톡 튀듯 전진
+        f.x += f.vx * .5; f.ty = Math.max(H * s.zone[0], Math.min(H * s.zone[1], f.ty)); f.y = f.ty + Math.sin(f.ph * (s.jerk ? 2.2 : 1.3)) * 10; if (Math.random() < .003) f.tvx = -Math.sign(f.vx) * f.spd;
       } else {                                                 // 문어·꽃게: 바닥을 기어다님
         f.x += f.vx; f.y = f.ty + Math.abs(Math.sin(f.ph * (f.k === 'crab' ? 4 : 1.2))) * (f.k === 'crab' ? 3 : 6);
         if (Math.random() < .006) f.tvx = -Math.sign(f.vx) * f.spd;
