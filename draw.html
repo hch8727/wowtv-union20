@@ -339,7 +339,7 @@ $('prizeSel').onchange = () => {
 /* ── 상품 소개 무대 ── */
 const stage = $('stage');
 (() => { const tryBg = srcs => { if (!srcs.length) return; const t = new Image(); t.onload = () => { document.body.style.setProperty('--bgimg', `url(${srcs[0]})`); document.body.classList.add('hasbg'); }; t.onerror = () => tryBg(srcs.slice(1)); t.src = srcs[0]; }; tryBg(['draw_bg.jpg', 'stage_bg.jpg']); })();
-(() => { const tryBg = srcs => { if (!srcs.length) return; const t = new Image(); t.onload = () => { stage.style.setProperty('--stagebg', `url(${srcs[0]})`); stage.classList.add('hasbg'); }; t.onerror = () => tryBg(srcs.slice(1)); t.src = srcs[0]; }; tryBg(['stage_bg.jpg', 'draw_bg.jpg']); })();   // stage_bg.jpg → draw_bg.jpg 순으로 사용
+(() => { const tryBg = srcs => { if (!srcs.length) return; const t = new Image(); t.onload = () => { stage.style.setProperty('--stagebg', `url(${srcs[0]})`); stage.classList.add('hasbg'); }; t.onerror = () => tryBg(srcs.slice(1)); t.src = srcs[0]; }; tryBg(['draw_bg.jpg']); })();   // 무대 배경 = draw_bg.jpg
 function renderDoors(){
   const byRank = [...prizes].sort((a, b) => a.rank - b.rank);         // 1등을 가운데, 2·3·4·5… 좌우 번갈아 (4 2 1 3 5)
   const list = []; byRank.forEach((p, i) => i === 0 ? list.push(p) : (i % 2 ? list.unshift(p) : list.push(p)));
