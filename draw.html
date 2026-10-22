@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>경품 추첨 | 한국경제TV노조출석부</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -59,7 +60,7 @@
   #stage{position:fixed;inset:0;z-index:60;display:none;overflow:hidden;background:#07101e;
          background-image:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(30,194,242,.18),transparent 70%)}
   #stage.on{display:block}
-  #stage.hasbg{background:#07101e url(stage_bg.jpg) center/cover no-repeat}
+  #stage.hasbg{background:#07101e center/cover no-repeat;background-image:var(--stagebg)}
   #stage.hasbg::before{content:"";position:absolute;inset:0;background:rgba(2,6,20,.35)}
   #stage.hasbg .floor{display:none}
   #stage.hasbg .doors{top:26%;bottom:22%;padding:0 12vw}
@@ -323,7 +324,7 @@ $('prizeSel').onchange = () => {
 /* ── 상품 소개 무대 ── */
 const stage = $('stage');
 (() => { const tryBg = srcs => { if (!srcs.length) return; const t = new Image(); t.onload = () => { document.body.style.setProperty('--bgimg', `url(${srcs[0]})`); document.body.classList.add('hasbg'); }; t.onerror = () => tryBg(srcs.slice(1)); t.src = srcs[0]; }; tryBg(['draw_bg.jpg', 'stage_bg.jpg']); })();
-(() => { const t = new Image(); t.onload = () => stage.classList.add('hasbg'); t.src = 'stage_bg.jpg'; })();   // stage_bg.jpg 있으면 배경으로
+(() => { const tryBg = srcs => { if (!srcs.length) return; const t = new Image(); t.onload = () => { stage.style.setProperty('--stagebg', `url(${srcs[0]})`); stage.classList.add('hasbg'); }; t.onerror = () => tryBg(srcs.slice(1)); t.src = srcs[0]; }; tryBg(['stage_bg.jpg', 'draw_bg.jpg']); })();   // stage_bg.jpg → draw_bg.jpg 순으로 사용
 function renderDoors(){
   const byRank = [...prizes].sort((a, b) => a.rank - b.rank);         // 1등을 가운데, 2·3·4·5… 좌우 번갈아 (4 2 1 3 5)
   const list = []; byRank.forEach((p, i) => i === 0 ? list.push(p) : (i % 2 ? list.unshift(p) : list.push(p)));
