@@ -214,7 +214,8 @@ async function loadAtt(){
 }
 function renderAtt(){
   const q = $('q').value.trim();
-  const rows = att.filter(a => !q || a.name.includes(q) || (a.phone || '').includes(q.replace(/\D/g,'')));
+  const qd = q.replace(/\D/g, '');
+  const rows = att.filter(a => !q || a.name.includes(q) || (qd.length >= 2 && (a.phone || '').includes(qd)));
   $('attBody').innerHTML = rows.map((a, i) => `<tr>
     <td class="n">${i + 1}</td><td>${esc(a.name)}</td><td>${fmtPhone(a.phone)}</td><td>${fmt(a.checked_in_at)}</td>
     <td>${a.prize_rank ? `<span class="tag">${a.prize_rank}등 ${esc(a.prize_name)}</span>` : ''}</td>
