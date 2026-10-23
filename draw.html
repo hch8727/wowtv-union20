@@ -12,9 +12,11 @@
   html,body{height:100%;margin:0}
   body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
        background-image:radial-gradient(ellipse at 50% 120%,#0a6fb4 0%,var(--ink) 50%,var(--ink-deep) 100%)}
-  body.hasbg{background:#07101e center/cover no-repeat;background-image:var(--bgimg)}
-  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.62);pointer-events:none}
+  body.hasbg{background:#07101e}
+  body.hasbg::after{content:"";position:fixed;inset:0;background:center/cover no-repeat;background-image:var(--bgimg);filter:contrast(1.25) saturate(1.15) brightness(.95);z-index:-1}
+  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.42);pointer-events:none}
   .wrap,#cd,#dim,#flash,#win,#stage,.toast,.snd{position:relative}
+  body.hasbg{isolation:isolate}
   button{font:inherit;cursor:pointer;border:0;border-radius:14px}
   /* 로그인 */
   #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--ink);z-index:9}
@@ -60,8 +62,10 @@
   #stage{position:fixed;inset:0;z-index:60;display:none;overflow:hidden;background:#07101e;
          background-image:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(30,194,242,.18),transparent 70%)}
   #stage.on{display:block}
-  #stage.hasbg{background:#07101e center/cover no-repeat;background-image:var(--stagebg)}
-  #stage.hasbg::before{content:"";position:absolute;inset:0;background:rgba(2,6,20,.55)}
+  #stage.hasbg{background:#07101e}
+  #stage.hasbg::after{content:"";position:absolute;inset:0;background:center/cover no-repeat;background-image:var(--stagebg);filter:contrast(1.25) saturate(1.15) brightness(.95);z-index:0}
+  #stage.hasbg::before{content:"";position:absolute;inset:0;background:rgba(2,6,20,.45);z-index:1}
+  #stage.hasbg>*{position:relative;z-index:1}
   #stage.hasbg .floor{display:none}
   #stage.hasbg .doors{top:26%;bottom:22%;padding:0 12vw}
   #stage.hasbg #stItem{bottom:14%}
