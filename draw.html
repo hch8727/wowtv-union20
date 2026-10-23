@@ -73,37 +73,35 @@
   .dr[data-d="1"]{transform:rotateY(calc(var(--s) * 12deg)) translateZ(-50px) scale(.95);filter:brightness(.85)}
   .dr[data-d="2"]{transform:rotateY(calc(var(--s) * 22deg)) translateZ(-130px) scale(.9);filter:brightness(.7)}
   .dr[data-d="3"]{transform:rotateY(calc(var(--s) * 30deg)) translateZ(-220px) scale(.84);filter:brightness(.6)}
-  .dr.open{filter:brightness(1)!important}
-  .dr .plate{width:66%;padding:7px 0;margin-bottom:10px;border-radius:8px;background:linear-gradient(#141a26,#0b0f18);color:#ffd36a;font-size:32px;font-weight:900;text-align:center;
-             border:1px solid rgba(255,211,106,.55);box-shadow:0 0 18px rgba(255,200,80,.45),inset 0 0 12px rgba(255,200,80,.2);letter-spacing:.04em;position:relative;z-index:3;text-shadow:0 0 10px rgba(255,211,106,.8)}
+  .dr.open,.dr.unlock{filter:brightness(1)!important}
+  /* 번호판 */
+  .dr .plate{width:66%;padding:7px 0;margin-bottom:12px;border-radius:8px;background:rgba(6,12,24,.85);color:#8fe3ff;font-size:30px;font-weight:900;text-align:center;
+             border:1px solid rgba(143,227,255,.6);box-shadow:0 0 14px rgba(143,227,255,.45);letter-spacing:.04em;position:relative;z-index:3;text-shadow:0 0 10px rgba(143,227,255,.8)}
   .dr .plate small{font-size:15px;font-weight:700;margin-left:4px}
-  .dr .frame{position:relative;flex:1;width:100%;border-radius:14px 14px 6px 6px;padding:12px;
-             background:linear-gradient(135deg,#2a3242,#4a5468 30%,#1c2230 55%,#3c4556 80%,#232a38);box-shadow:0 20px 50px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.18)}
-  .dr .frame::before{content:"";position:absolute;inset:5px;border-radius:11px 11px 4px 4px;pointer-events:none;border:2px solid rgba(90,220,255,.85);
-             box-shadow:0 0 14px rgba(90,220,255,.8),inset 0 0 14px rgba(90,220,255,.5);animation:ledpulse 2.2s ease-in-out infinite alternate}
-  @keyframes ledpulse{from{opacity:.65}to{opacity:1}}
-  .dr .inner{position:relative;height:100%;overflow:hidden;border-radius:6px;background:#06080f;box-shadow:inset 0 0 40px #000}
-  .dr .curt{position:absolute;top:0;bottom:0;width:52%;z-index:2;transition:transform 1.6s cubic-bezier(.85,0,.2,1);
-            background:repeating-linear-gradient(60deg,rgba(255,255,255,.04) 0 2px,transparent 2px 22px),repeating-linear-gradient(-60deg,rgba(255,255,255,.04) 0 2px,transparent 2px 22px),linear-gradient(180deg,#1a2130,#0e1420 50%,#161c2a);
-            box-shadow:inset 0 -60px 80px rgba(0,0,0,.6)}
-  .dr .curt::after{content:"";position:absolute;top:14%;bottom:14%;width:3px;background:linear-gradient(transparent,#ffd36a 30%,#ffd36a 70%,transparent);opacity:.9;box-shadow:0 0 10px rgba(255,211,106,.7)}
-  .dr .curt.l{left:0;border-right:2px solid rgba(90,220,255,.7)}.dr .curt.l::after{right:10px}
-  .dr .curt.r{right:0;border-left:2px solid rgba(90,220,255,.7)}.dr .curt.r::after{left:10px}
-  .dr.open .curt.l{transform:translateX(-104%)}.dr.open .curt.r{transform:translateX(104%)}
-  /* 잠금 해제: 번호판 깜빡 + 틈새 빛 */
-  .dr.unlock .plate{animation:unlock .18s steps(2) 4}
-  @keyframes unlock{to{box-shadow:0 0 30px rgba(255,220,120,1),inset 0 0 20px rgba(255,220,120,.6);color:#fff}}
-  .dr .seam{position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:#fff;z-index:3;opacity:0;box-shadow:0 0 18px 6px rgba(255,255,255,.9),0 0 60px 20px rgba(90,220,255,.6);pointer-events:none}
-  .dr.unlock .seam{animation:seam .6s ease-out .55s forwards}
-  @keyframes seam{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:scaleY(1)}}
-  .dr.open .seam{opacity:0;transition:opacity .4s .6s}
-  .dr.open .inner::after{content:"";position:absolute;inset:0;background:#fff;opacity:0;animation:doorflash 1.1s ease-out .9s;pointer-events:none;z-index:3}
-  .dr .lit{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity .8s 1.2s;background:radial-gradient(ellipse 70% 60% at 50% 30%,#ffffff,#dff6ff 45%,#9fdcff 100%)}
-  .dr.open .lit{opacity:1}
-  @keyframes doorflash{0%{opacity:0}25%{opacity:.95}100%{opacity:0}}
-  .dr .glow{position:absolute;inset:0;opacity:0;transition:opacity 1s .8s;background:radial-gradient(ellipse at 50% 20%,rgba(255,255,255,.4),rgba(90,220,255,.18) 50%,transparent 75%)}
+  /* 빛의 게이트 */
+  .dr .frame{position:relative;flex:1;width:100%;border-radius:16px;padding:0;background:transparent;box-shadow:none}
+  .dr .frame::before{content:"";position:absolute;inset:0;border-radius:16px;border:3px solid rgba(143,227,255,.95);
+             box-shadow:0 0 22px rgba(143,227,255,.9),inset 0 0 22px rgba(143,227,255,.45);animation:ledpulse 2.4s ease-in-out infinite alternate;z-index:3;pointer-events:none}
+  @keyframes ledpulse{from{opacity:.6}to{opacity:1}}
+  .dr .inner{position:absolute;inset:6px;overflow:hidden;border-radius:12px;background:transparent;box-shadow:none}
+  .dr .veil{position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(143,227,255,.6),rgba(143,227,255,.18) 55%,rgba(143,227,255,.55));
+            backdrop-filter:blur(3px);transition:opacity 1.2s ease,transform 1.2s ease}
+  .dr .veil::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.12) 0 2px,transparent 2px 9px);animation:scan 3s linear infinite;opacity:.6}
+  @keyframes scan{to{background-position:0 90px}}
+  .dr .q{position:absolute;inset:0;display:grid;place-items:center;font-size:88px;font-weight:900;color:#fff;text-shadow:0 0 24px rgba(143,227,255,1);z-index:3;transition:opacity .6s,transform .6s}
+  .dr .sil{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);height:70%;width:auto;z-index:1;opacity:0;filter:brightness(0) blur(2px) drop-shadow(0 0 18px rgba(143,227,255,.9));transition:opacity .8s}
+  /* 잠금 해제: 게이트 고동 + 실루엣 비침 + ? 사라짐 */
+  .dr.unlock .frame::before{animation:gatepulse .35s ease-in-out 4}
+  @keyframes gatepulse{50%{box-shadow:0 0 44px rgba(255,255,255,1),inset 0 0 40px rgba(143,227,255,.9);border-color:#fff}}
+  .dr.unlock .sil{opacity:.9}
+  .dr.unlock .q{opacity:0;transform:scale(1.6)}
+  /* 공개: 빛막이 위로 걷히며 사라짐 */
+  .dr.open .veil{opacity:0;transform:translateY(-100%)}
+  .dr.open .sil{opacity:0;transition:opacity .4s}
+  .dr.open .frame::before{animation:none;border-color:#fff;box-shadow:0 0 40px rgba(255,255,255,.9),inset 0 0 30px rgba(255,255,255,.5)}
+  .dr .glow{position:absolute;inset:0;opacity:0;transition:opacity 1s .4s;background:radial-gradient(ellipse at 50% 20%,rgba(255,255,255,.55),rgba(143,227,255,.2) 50%,transparent 75%)}
   .dr.open .glow{opacity:1}
-  .dr.done .plate{filter:grayscale(1) brightness(.5);box-shadow:none;text-shadow:none}.dr.done .frame::before{animation:none;opacity:.2}
+  .dr.done .plate{filter:grayscale(1) brightness(.5);box-shadow:none;text-shadow:none}.dr.done .frame::before{animation:none;opacity:.25;box-shadow:none}.dr.done .veil{opacity:.25}.dr.done .q{opacity:.3}
   .dr .spot{position:absolute;left:50%;top:-6%;width:160%;height:110%;transform:translateX(-50%);opacity:0;transition:opacity 1s .6s;pointer-events:none;z-index:1;
             background:radial-gradient(ellipse 45% 55% at 50% 0%,rgba(255,255,255,.22),transparent 70%)}
   .dr.open .spot{opacity:1}
@@ -369,7 +367,7 @@ function renderDoors(){
   const doneSet = new Set(list.filter(p => winners.filter(w => w.prize_id === p.id && !w.cancelled).length >= p.winner_count).map(p => p.id));
   $('doors').innerHTML = list.map((p, i) => `<div class="dr ${doneSet.has(p.id) ? 'done' : ''}" data-id="${p.id}" data-d="${Math.min(3, Math.abs(i - mid))}" style="--s:${i < mid ? 1 : -1}">
     <div class="plate">${p.rank}<small>등</small></div>
-    <div class="frame"><div class="inner"><div class="lit"></div><div class="spot"></div><div class="glow"></div><div class="curt l"></div><div class="curt r"></div><div class="seam"></div></div></div></div>`).join('');
+    <div class="frame"><div class="inner"><div class="spot"></div><div class="glow"></div>${p.image_url ? `<img class="sil" src="${esc(p.image_url)}" alt="">` : ''}<div class="veil"></div><div class="q">?</div></div></div></div>`).join('');
 }
 function openStage(){
   if (!current) return;
