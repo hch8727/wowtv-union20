@@ -343,7 +343,7 @@ function renderLog(){
 $('log').onclick = async e => {
   const id = e.target.dataset.c; if (!id) return;
   const wv = winners.find(w => w.id == id); if (!await ask('당첨 취소', `${l4Of(wv.attendee_id)} ${nameOf(wv.attendee_id)} 님의 당첨을 취소할까요? 이 사람은 다시 추첨 대상에 포함됩니다.`, '취소 처리', true)) return;
-  await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +id }); refresh();
+  await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +id }); await refresh(); toast('당첨을 취소했습니다 — 다시 추첨 대상에 포함됩니다');
 };
 
 /* ── 상품 선택 ── */
@@ -417,6 +417,7 @@ async function redraw(bad){
   if (!bad || busy) return;
   if (!await ask('부재 → 재추첨', `${bad.last4} ${bad.name || ''} 님을 부재 처리하고 1명을 다시 뽑을까요? 부재자는 이후 추첨에서 제외됩니다.`, '재추첨')) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: bad.winner_id, p_absent: true });
+  await refresh(); toast(`${bad.last4} ${bad.name || ''} 부재 처리 — 이후 추첨에서 제외됩니다`);
   const idx = lastDraw.indexOf(bad); $('names').querySelectorAll('.reel')[idx]?.remove();
   lastDraw = lastDraw.filter(x => x !== bad);
   draw(1, true);
