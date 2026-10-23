@@ -13,7 +13,7 @@
   body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:var(--ink);color:#fff;overflow:hidden;
        background-image:radial-gradient(ellipse at 50% 120%,#0a6fb4 0%,var(--ink) 50%,var(--ink-deep) 100%)}
   body.hasbg{background:#07101e center/cover no-repeat;background-image:var(--bgimg)}
-  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.55);pointer-events:none}
+  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.62);pointer-events:none}
   .wrap,#cd,#dim,#flash,#win,#stage,.toast,.snd{position:relative}
   button{font:inherit;cursor:pointer;border:0;border-radius:14px}
   /* 로그인 */
@@ -61,7 +61,7 @@
          background-image:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(30,194,242,.18),transparent 70%)}
   #stage.on{display:block}
   #stage.hasbg{background:#07101e center/cover no-repeat;background-image:var(--stagebg)}
-  #stage.hasbg::before{content:"";position:absolute;inset:0;background:rgba(2,6,20,.35)}
+  #stage.hasbg::before{content:"";position:absolute;inset:0;background:rgba(2,6,20,.55)}
   #stage.hasbg .floor{display:none}
   #stage.hasbg .doors{top:26%;bottom:22%;padding:0 12vw}
   #stage.hasbg #stItem{bottom:14%}
@@ -80,12 +80,12 @@
   .dr .plate small{font-size:15px;font-weight:700;margin-left:4px}
   /* 빛의 게이트 */
   .dr .frame{position:relative;flex:1;width:100%;border-radius:16px;padding:0;background:transparent;box-shadow:none}
-  .dr .frame::before{content:"";position:absolute;inset:0;border-radius:16px;border:3px solid rgba(143,227,255,.95);
+  .dr .frame::before{content:"";position:absolute;inset:0;border-radius:16px;border:3px solid rgba(143,227,255,.95);background:rgba(0,0,0,.2);
              box-shadow:0 0 22px rgba(143,227,255,.9),inset 0 0 22px rgba(143,227,255,.45);animation:ledpulse 2.4s ease-in-out infinite alternate;z-index:3;pointer-events:none}
   @keyframes ledpulse{from{opacity:.6}to{opacity:1}}
   .dr .inner{position:absolute;inset:6px;overflow:hidden;border-radius:12px;background:transparent;box-shadow:none}
-  .dr .veil{position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(143,227,255,.6),rgba(143,227,255,.18) 55%,rgba(143,227,255,.55));
-            backdrop-filter:blur(3px);transition:opacity 1.2s ease,transform 1.2s ease}
+  .dr .veil{position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(10,40,70,.88),rgba(20,70,110,.72) 55%,rgba(10,40,70,.9));
+            backdrop-filter:blur(6px);transition:opacity 1.2s ease,transform 1.2s ease}
   .dr .veil::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.12) 0 2px,transparent 2px 9px);animation:scan 3s linear infinite;opacity:.6}
   @keyframes scan{to{background-position:0 90px}}
   .dr .q{position:absolute;inset:0;display:grid;place-items:center;font-size:88px;font-weight:900;color:#fff;text-shadow:0 0 24px rgba(143,227,255,1);z-index:3;transition:opacity .6s,transform .6s}
