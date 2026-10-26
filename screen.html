@@ -46,8 +46,8 @@
   #prog .line{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(transparent,rgba(255,211,106,.42) 6%,rgba(255,211,106,.42) 94%,transparent);box-shadow:0 0 8px rgba(255,211,106,.2);transform:scaleY(0);transform-origin:50% 0;transition:transform .7s cubic-bezier(.4,0,.2,1)}
   #prog.on .line{transform:scaleY(1)}
   #prog.closing .line{transform-origin:50% 100%;transform:scaleY(0);transition:transform .45s ease-in}
-  #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transform:translateY(-60px);transition:none}
-  #prog .it.in{opacity:1;transform:none;transition:transform .32s cubic-bezier(.2,1.3,.4,1),opacity .2s}
+  #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transform:translateY(-34px);transition:none}
+  #prog .it.in{opacity:1;transform:none;transition:transform .55s cubic-bezier(.16,1,.3,1),opacity .45s ease-out}
   #prog .it.out{opacity:0;transform:translateY(-40px);transition:transform .35s ease-in,opacity .3s}
   #prog .t{position:relative;display:inline-block;font-size:clamp(20px,3.3vh,32px);font-weight:700;letter-spacing:.02em;text-shadow:0 0 6px rgba(2,6,20,1),0 0 14px rgba(2,6,20,1),0 2px 10px rgba(0,0,0,.9)}
   #prog .n{position:absolute;right:100%;margin-right:16px;top:50%;transform:translateY(-50%);font-size:clamp(11px,1.5vh,15px);color:var(--amber);letter-spacing:.08em;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(2,6,20,1)}
@@ -89,14 +89,17 @@ const Snd = (() => {
   const play = (n, v = 1) => { const a = files[n]; if (!a) return false; const c = a.cloneNode(); c.volume = v; c.play().catch(() => {}); return true; };
   const safe = f => (...a) => { try { f(...a); } catch (e) {} };
   return {
-    tick: safe(() => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;              // 부드러운 "톡" (낮은 둔탁음 + 아주 짧은 클릭)
-      const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(140, t + .07);
-      g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.45, t + .006); g.gain.exponentialRampToValueAtTime(.001, t + .12); o.connect(g).connect(c.destination); o.start(t); o.stop(t + .13);
-      const o2 = c.createOscillator(), g2 = c.createGain(); o2.type = 'triangle'; o2.frequency.value = 1900; g2.gain.setValueAtTime(.08, t); g2.gain.exponentialRampToValueAtTime(.001, t + .025); o2.connect(g2).connect(c.destination); o2.start(t); o2.stop(t + .03); }),
-    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;          // 선 긋기: 잔잔한 상승 글리산도
-      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter(); o.type = 'sine'; o.frequency.setValueAtTime(440, t); o.frequency.exponentialRampToValueAtTime(1320, t + .65);
-      f.type = 'lowpass'; f.frequency.value = 2400; g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.12, t + .08); g.gain.exponentialRampToValueAtTime(.001, t + .75);
-      o.connect(f).connect(g).connect(c.destination); o.start(t); o.stop(t + .8); }),
+    tick: safe((i = 0) => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;          // 벨 차임 — 항목마다 오음계로 한 음씩 올라감
+      const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.7, 1318.5, 1568, 1760], base = scale[i % scale.length];
+      [[1, .22, 1.4], [2.76, .07, .8], [5.4, .03, .5]].forEach(([r, v, d]) => {                       // 종 소리의 비조화 배음
+        const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = base * r;
+        g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(v, t + .012); g.gain.exponentialRampToValueAtTime(.001, t + d);
+        o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .05); }); }),
+    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;          // 선 긋기 — 반짝이는 패드가 부풀었다 가라앉음
+      [[220, 0], [220.8, 0], [440, .3], [660, .5], [1320, .9]].forEach(([f, dt]) => {
+        const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(.001, t + dt); g.gain.exponentialRampToValueAtTime(f > 1000 ? .04 : .09, t + dt + .35); g.gain.exponentialRampToValueAtTime(.001, t + 1.4);
+        o.connect(g).connect(c.destination); o.start(t + dt); o.stop(t + 1.5); }); }),
   };
 })();
 
@@ -110,7 +113,7 @@ function show(){
   if (open) return; open = true; clearT(); prog.classList.remove('closing'); prog.classList.add('on'); btn.classList.add('on'); btn.textContent = '▴ 식순 닫기';
   items.forEach(it => it.classList.remove('in', 'out'));
   timers.push(setTimeout(Snd.swoosh, 150));                                            // 선이 내려오는 소리
-  items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(); }, 900 + i * 130)));   // 선 다 내려온 뒤 탁·탁·탁
+  items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(i); }, 950 + i * 170)));   // 선 다 내려온 뒤 탁·탁·탁
 }
 function hide(){
   if (!open) return; open = false; clearT(); btn.classList.remove('on'); btn.textContent = '▾ 식순';
