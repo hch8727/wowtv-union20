@@ -48,11 +48,9 @@
   #prog.closing .line{transform-origin:50% 100%;transform:scaleY(0);transition:transform .45s ease-in}
   #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transition:opacity .4s}
   #prog.on .it{opacity:1}
-  #prog .tx{display:inline-block;transform:perspective(700px) rotateX(-92deg);opacity:0;transform-origin:50% 50%;transition:transform .6s cubic-bezier(.2,.9,.25,1),opacity .25s}
-  #prog .it.in .tx{transform:perspective(700px) rotateX(0);opacity:1}
-  #prog .n{opacity:.3;transition:opacity .4s}
-  #prog .it.in .n{opacity:1}
-  #prog .it.out .tx{transform:perspective(700px) rotateX(92deg);opacity:0;transition:transform .3s ease-in,opacity .25s}
+  #prog .it .t{transform:perspective(700px) rotateX(-92deg);opacity:0;transform-origin:50% 50%;transition:transform .6s cubic-bezier(.2,.9,.25,1),opacity .25s}
+  #prog .it.in .t{transform:perspective(700px) rotateX(0);opacity:1}
+  #prog .it.out .t{transform:perspective(700px) rotateX(92deg);opacity:0;transition:transform .3s ease-in,opacity .25s}
   #prog .t{position:relative;display:inline-block;font-size:clamp(20px,3.3vh,32px);font-weight:700;letter-spacing:.02em;text-shadow:0 0 6px rgba(2,6,20,1),0 0 14px rgba(2,6,20,1),0 2px 10px rgba(0,0,0,.9)}
   #prog .n{position:absolute;right:100%;margin-right:16px;top:50%;transform:translateY(-50%);font-size:clamp(11px,1.5vh,15px);color:var(--amber);letter-spacing:.08em;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(2,6,20,1)}
   /* 드래그·선택 방지 */
