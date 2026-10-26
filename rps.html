@@ -145,7 +145,7 @@ function reset(){ round = 1; clearTimeout(timer); idle(); }
 addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); ({ idle: start, spin: stop, result: next })[state]?.(); }
   if (e.key === 'r' || e.key === 'R') reset();
-  const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m;
+  const m = { '0': 'screen.html', '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m;
 });
 $('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
 idle();
