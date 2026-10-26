@@ -43,7 +43,7 @@
   #prog h2{margin:0;font-size:clamp(30px,4.8vh,48px);font-weight:800;letter-spacing:.5em;padding-left:.5em;text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:0;transform:translateY(-14px);transition:opacity .5s .1s,transform .5s .1s}
   #prog.on .eyebrow,#prog.on h2{opacity:1;transform:none}
   #prog .list{flex:1;width:100%;display:flex;flex-direction:column;justify-content:space-evenly;position:relative;margin-top:1vh}
-  #prog .line{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(transparent,rgba(255,211,106,.8) 6%,rgba(255,211,106,.8) 94%,transparent);box-shadow:0 0 10px rgba(255,211,106,.45);transform:scaleY(0);transform-origin:50% 0;transition:transform .7s cubic-bezier(.4,0,.2,1)}
+  #prog .line{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(transparent,rgba(255,211,106,.42) 6%,rgba(255,211,106,.42) 94%,transparent);box-shadow:0 0 8px rgba(255,211,106,.2);transform:scaleY(0);transform-origin:50% 0;transition:transform .7s cubic-bezier(.4,0,.2,1)}
   #prog.on .line{transform:scaleY(1)}
   #prog.closing .line{transform-origin:50% 100%;transform:scaleY(0);transition:transform .45s ease-in}
   #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transform:translateY(-60px);transition:none}
@@ -63,9 +63,9 @@
   <div class="launch">
     <h1>노동조합 창립 20주년 · 행사 화면</h1>
     <div class="grid">
-      <a class="card" href="monitor.html"><div class="k">1</div><b>출석 현황</b><span>실시간 카운트와 QR 코드.</span></a>
-      <a class="card" href="draw.html"><div class="k">2</div><b>경품 추첨</b><span>상품 소개와 슬롯 릴 추첨.</span></a>
-      <a class="card" href="rps.html"><div class="k">3</div><b>가위바위보</b><span>화면이 멈추면 이긴 사람만 생존.</span></a>
+      <a class="card" href="monitor.html"><div class="k">1</div><b>출석 현황</b><span>실시간 카운트와 QR 코드. 행사 시작 전부터 띄워 두세요.</span></a>
+      <a class="card" href="draw.html"><div class="k">2</div><b>경품 추첨</b><span>상품 소개와 슬롯 릴 추첨. 관리자 비밀번호가 필요합니다.</span></a>
+      <a class="card" href="rps.html"><div class="k">3</div><b>가위바위보</b><span>화면이 멈추면 이긴 사람만 생존. 서버 불필요.</span></a>
     </div>
     <p class="tip">숫자키 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>으로 바로 이동 · <kbd>4</kbd> 또는 상단 버튼으로 식순 · <kbd>Esc</kbd> 닫기<br><kbd>F11</kbd> 전체화면을 권장합니다.</p>
   </div>
@@ -89,15 +89,14 @@ const Snd = (() => {
   const play = (n, v = 1) => { const a = files[n]; if (!a) return false; const c = a.cloneNode(); c.volume = v; c.play().catch(() => {}); return true; };
   const safe = f => (...a) => { try { f(...a); } catch (e) {} };
   return {
-    tick: safe(() => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;              // 나무 두드리는 "탁"
-      const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(240, t + .06);
-      g.gain.setValueAtTime(.5, t); g.gain.exponentialRampToValueAtTime(.001, t + .09); o.connect(g).connect(c.destination); o.start(t); o.stop(t + .1);
-      const b = c.createBuffer(1, c.sampleRate * .03, c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-      const s = c.createBufferSource(), f = c.createBiquadFilter(), g2 = c.createGain(); s.buffer = b; f.type = 'bandpass'; f.frequency.value = 2400; g2.gain.value = .25; s.connect(f).connect(g2).connect(c.destination); s.start(t); }),
-    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;          // 선 긋는 "쉬익"
-      const b = c.createBuffer(1, c.sampleRate * .7, c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1);
-      const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = b; f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(600, t); f.frequency.exponentialRampToValueAtTime(3200, t + .6);
-      g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.18, t + .15); g.gain.exponentialRampToValueAtTime(.001, t + .7); s.connect(f).connect(g).connect(c.destination); s.start(t); }),
+    tick: safe(() => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;              // 부드러운 "톡" (낮은 둔탁음 + 아주 짧은 클릭)
+      const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(140, t + .07);
+      g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.45, t + .006); g.gain.exponentialRampToValueAtTime(.001, t + .12); o.connect(g).connect(c.destination); o.start(t); o.stop(t + .13);
+      const o2 = c.createOscillator(), g2 = c.createGain(); o2.type = 'triangle'; o2.frequency.value = 1900; g2.gain.setValueAtTime(.08, t); g2.gain.exponentialRampToValueAtTime(.001, t + .025); o2.connect(g2).connect(c.destination); o2.start(t); o2.stop(t + .03); }),
+    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;          // 선 긋기: 잔잔한 상승 글리산도
+      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter(); o.type = 'sine'; o.frequency.setValueAtTime(440, t); o.frequency.exponentialRampToValueAtTime(1320, t + .65);
+      f.type = 'lowpass'; f.frequency.value = 2400; g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.12, t + .08); g.gain.exponentialRampToValueAtTime(.001, t + .75);
+      o.connect(f).connect(g).connect(c.destination); o.start(t); o.stop(t + .8); }),
   };
 })();
 
