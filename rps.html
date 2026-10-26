@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가위바위보 | 한국경제TV노조출석부</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9;--amber:#ffd36a}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:#07101e;color:#fff;overflow:hidden;position:relative;isolation:isolate}
+  body.hasbg::after{content:"";position:fixed;inset:0;background:center/cover no-repeat;background-image:var(--bgimg);filter:contrast(1.25) saturate(1.15) brightness(.95);z-index:-2}
+  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.5);z-index:-1}
+  .sign{position:fixed;left:36px;top:30px;display:flex;align-items:center;gap:20px;padding:12px 22px 12px 14px;border-radius:20px;background:rgba(0,25,55,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);pointer-events:none;z-index:5}
+  .sign .lg{background:#fff;border-radius:10px;padding:8px 14px}.sign .lg img{height:34px;width:auto;display:block}
+  .sign .r{display:flex;flex-direction:column;gap:2px;border-left:1px solid rgba(255,255,255,.18);padding-left:20px}
+  .sign .t{font-size:14px;color:var(--gold-soft);font-weight:600}
+  .sign .c{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+  .round{position:fixed;right:36px;top:34px;background:rgba(0,25,55,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px 22px;text-align:center;z-index:5}
+  .round small{display:block;font-size:13px;color:var(--gold-soft)}.round b{font-size:34px;line-height:1.1}
+  /* 화면 전환 탭 */
+  .snav{position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:4px;background:rgba(0,0,0,.35);backdrop-filter:blur(8px);padding:4px;border-radius:999px;opacity:0;transition:opacity .3s;z-index:40;pointer-events:none}
+  body.navon .snav{opacity:1;pointer-events:auto}
+  .snav a{color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px}
+  .snav a.cur{background:var(--gold)}
+  /* 게임 */
+  .stage{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+  h1{margin:0 0 4vh;font-size:clamp(28px,4.4vh,44px);font-weight:800;letter-spacing:.2em;padding-left:.2em}
+  .hands{display:flex;gap:4vw}
+  .hand{width:min(300px,18vw);aspect-ratio:1;border-radius:14%;background:rgba(0,25,55,.5);border:2px solid rgba(255,255,255,.14);display:grid;place-items:center;font-size:min(190px,11.5vw);line-height:1;transition:transform .12s,background .12s,border-color .12s,opacity .12s,filter .12s;opacity:.3;filter:grayscale(1)}
+  .hand.on{opacity:1;filter:none;background:rgba(30,194,242,.3);border-color:var(--gold);box-shadow:0 0 50px rgba(30,194,242,.6);transform:scale(1.08)}
+  body.idle .hand{opacity:1;filter:none}
+  .msg{margin-top:5vh;font-size:clamp(20px,3.4vh,34px);font-weight:700;color:#cfd8e6;text-align:center;min-height:1.4em}
+  .msg b{color:var(--amber);font-size:1.3em}
+  .ctrl{position:fixed;left:50%;bottom:50px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
+  button{font-family:inherit;padding:18px 40px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:20px;font-weight:700;cursor:pointer}
+  button.main{background:var(--gold);border-color:var(--gold)}
+  button.stop{background:#e74c3c;border-color:#e74c3c;font-size:24px;padding:18px 60px}
+  button:disabled{opacity:.35;cursor:default}
+  /* 결과 */
+  #res{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:4;text-align:center}
+  body.result #res{display:flex}
+  body.result .stage{visibility:hidden}
+  #res .big{font-size:min(300px,34vh);line-height:1;filter:drop-shadow(0 20px 40px rgba(0,0,0,.6));animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  #res .name{font-size:clamp(34px,5.4vh,54px);font-weight:800;margin-top:1vh}
+  #res .who{margin-top:2vh;font-size:clamp(24px,3.6vh,36px);font-weight:700;color:#cfd8e6;opacity:0;animation:fade .5s .5s forwards}
+  #res .who b{color:var(--amber);font-size:1.35em}
+  #res .who i{display:block;font-style:normal;font-size:clamp(15px,2.2vh,22px);color:var(--muted);margin-top:1vh}
+  @keyframes fade{to{opacity:1}}
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:6}
+  #flash.on{animation:flash .5s ease-out}
+  @keyframes flash{0%{opacity:.9}100%{opacity:0}}
+  .snd{position:fixed;right:16px;bottom:12px;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 14px;border-radius:999px;font-size:13px;cursor:pointer;z-index:5}
+  body{-webkit-user-select:none;user-select:none}
+  img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+</style>
+</head>
+<body class="idle">
+  <div class="sign"><div class="lg"><img src="logo.png" alt="한국경제TV"></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
+  <nav class="snav"><a href="monitor.html">출석 현황</a><a href="draw.html">경품 추첨</a><a class="cur" href="rps.html">가위바위보</a></nav>
+  <div class="round"><small>라운드</small><b id="round">1</b></div>
+
+  <div class="stage">
+    <h1>가위 바위 보</h1>
+    <div class="hands"><div class="hand" data-i="0">✌️</div><div class="hand" data-i="1">✊</div><div class="hand" data-i="2">✋</div></div>
+    <div class="msg" id="msg">손을 드세요! 화면이 멈추면 <b>이긴 사람만 생존</b></div>
+  </div>
+
+  <div id="res"><div class="big" id="rBig"></div><div class="name" id="rName"></div><div class="who" id="rWho"></div></div>
+  <div id="flash"></div>
+
+  <div class="ctrl" id="ctrl"></div>
+  <button class="snd" id="snd">🔊 사운드 켜짐</button>
+
+<script>
+const $ = id => document.getElementById(id);
+const HANDS = [{ e: '✌️', n: '가위' }, { e: '✊', n: '바위' }, { e: '✋', n: '보' }];
+const BEATS = { 0: 2, 1: 0, 2: 1 };                      // 가위→보 / 바위→가위 / 보→바위 를 이김  (이 손을 이기는 손: WINNER[x])
+const WINNER = { 0: 1, 1: 2, 2: 0 };                     // 화면이 x일 때 생존(이기는) 손
+
+(() => { const t = new Image(); t.onload = () => { document.body.style.setProperty('--bgimg', 'url(draw_bg.jpg)'); document.body.classList.add('hasbg'); }; t.src = 'draw_bg.jpg'; })();
+(() => { const el = $('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
+let navT; addEventListener('mousemove', () => { document.body.classList.add('navon'); clearTimeout(navT); navT = setTimeout(() => document.body.classList.remove('navon'), 3000); });
+
+/* 사운드 (tick.mp3 / tada.mp3 있으면 사용) */
+const Snd = (() => {
+  let ctx, on = true; const ac = () => { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return ctx; };
+  const files = {}; ['tick', 'tada'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto'; a.onerror = () => { files[n] = null; }; a.oncanplaythrough = () => { files[n] = a; }; });
+  const play = (n, v = 1) => { const a = files[n]; if (!a || !on) return false; const c = a.cloneNode(); c.volume = v; c.play().catch(() => {}); return true; };
+  const safe = f => (...a) => { if (!on) return; try { f(...a); } catch (e) {} };
+  const tone = (fr, d, v, type = 'sine', t0 = 0) => { const c = ac(), t = c.currentTime + t0, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = fr; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g).connect(c.destination); o.start(t); o.stop(t + d); };
+  return {
+    tick: safe(() => { if (play('tick', .6)) return; tone(1400, .05, .25, 'square'); }),
+    stop: safe(() => { if (play('tada', .9)) return; [523, 659, 784, 1047].forEach((f, i) => tone(f, .5, .3, 'triangle', i * .09)); tone(1568, 1.2, .25, 'sine', .36); }),
+    toggle(){ on = !on; return on; },
+  };
+})();
+
+/* 게임 상태 */
+let state = 'idle', round = 1, cur = 1, timer = null, speed = 90;
+const hands = [...document.querySelectorAll('.hand')];
+const light = i => hands.forEach((h, k) => h.classList.toggle('on', k === i));
+function setCtrl(html){ $('ctrl').innerHTML = html; }
+
+function idle(){
+  state = 'idle'; document.body.classList.add('idle'); document.body.classList.remove('result'); light(-1);
+  $('msg').innerHTML = '손을 드세요! 화면이 멈추면 <b>이긴 사람만 생존</b>'; $('round').textContent = round;
+  setCtrl('<button class="main" id="bStart">시작 (Space)</button><button id="bReset">처음부터</button>');
+  $('bStart').onclick = start; $('bReset').onclick = reset;
+}
+function start(){
+  if (state !== 'idle') return; state = 'spin'; document.body.classList.remove('idle'); speed = 90;
+  $('msg').innerHTML = '손을 드세요! 화면이 멈추면 <b>이긴 사람만 생존</b>';
+  setCtrl('<button class="stop" id="bStop">멈춤 (Space)</button>'); $('bStop').onclick = stop;
+  const step = () => { cur = (cur + 1 + Math.floor(Math.random() * 2)) % 3; light(cur); Snd.tick(); timer = setTimeout(step, speed); };
+  step();
+}
+function stop(){
+  if (state !== 'spin') return; state = 'slowing'; clearTimeout(timer); setCtrl('');
+  const final = Math.floor(Math.random() * 3);                       // 결과는 여기서 확정, 룰렛은 연출
+  let delays = [110, 140, 180, 240, 320, 420, 560], k = 0;
+  const step = () => {
+    cur = (cur + 1) % 3; light(cur); Snd.tick();
+    if (k < delays.length) { timer = setTimeout(step, delays[k++]); }
+    else if (cur !== final) { timer = setTimeout(step, 650); }        // 최종 손에 맞춰 멈춤
+    else setTimeout(() => reveal(final), 350);
+  };
+  step();
+}
+function reveal(i){
+  state = 'result'; const w = WINNER[i], losers = [0, 1, 2].filter(x => x !== w).map(x => HANDS[x].n).join(' · ');
+  $('rBig').textContent = HANDS[i].e; $('rName').textContent = HANDS[i].n;
+  $('rWho').innerHTML = `<b>${HANDS[w].e} ${HANDS[w].n}</b> 내신 분 생존!<i>${losers} 내신 분은 자리에 앉아 주세요</i>`;
+  $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
+  document.body.classList.add('result'); Snd.stop();
+  setCtrl('<button class="main" id="bNext">다음 라운드 (Space)</button><button id="bReset">처음부터</button>');
+  $('bNext').onclick = next; $('bReset').onclick = reset;
+}
+function next(){ round++; idle(); start(); }
+function reset(){ round = 1; clearTimeout(timer); idle(); }
+
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); ({ idle: start, spin: stop, result: next })[state]?.(); }
+  if (e.key === 'r' || e.key === 'R') reset();
+  const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m;
+});
+$('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
+idle();
+</script>
+</body>
+</html>

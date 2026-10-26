@@ -214,7 +214,7 @@
 </style>
 </head>
 <body>
-<nav class="snav"><a href="monitor.html" class="">출석 현황</a><a href="draw.html" class="cur">경품 추첨</a></nav>
+<nav class="snav"><a href="monitor.html" class="">출석 현황</a><a href="draw.html" class="cur">경품 추첨</a><a href="rps.html" class="">가위바위보</a></nav>
 <div id="gate"><form id="gateForm"><input id="pw" type="password" placeholder="관리자 비밀번호" autofocus><button>입장</button><div class="err" id="gateErr"></div></form></div>
 
 <div class="wrap">
@@ -660,7 +660,7 @@ function toast(t){ const el = $('toast'); el.textContent = t; el.style.display =
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m; });
+    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
 })();
 /* 간판 시계 */
 (() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();

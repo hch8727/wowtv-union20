@@ -82,7 +82,7 @@
 </style>
 </head>
 <body>
-<nav class="snav"><a href="monitor.html" class="cur">출석 현황</a><a href="draw.html" class="">경품 추첨</a></nav>
+<nav class="snav"><a href="monitor.html" class="cur">출석 현황</a><a href="draw.html" class="">경품 추첨</a><a href="rps.html" class="">가위바위보</a></nav>
 <canvas id="bg"></canvas>
 <div id="pop"></div>
 <div class="wrap">
@@ -329,7 +329,7 @@ setCount(0); tick(); setInterval(tick, POLL_MS);
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m; });
+    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
 })();
 /* 간판 시계 */
 (() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
