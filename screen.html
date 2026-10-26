@@ -46,9 +46,13 @@
   #prog .line{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(transparent,rgba(255,211,106,.42) 6%,rgba(255,211,106,.42) 94%,transparent);box-shadow:0 0 8px rgba(255,211,106,.2);transform:scaleY(0);transform-origin:50% 0;transition:transform .7s cubic-bezier(.4,0,.2,1)}
   #prog.on .line{transform:scaleY(1)}
   #prog.closing .line{transform-origin:50% 100%;transform:scaleY(0);transition:transform .45s ease-in}
-  #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transform:translateY(-34px);transition:none}
-  #prog .it.in{opacity:1;transform:none;transition:transform .55s cubic-bezier(.16,1,.3,1),opacity .45s ease-out}
-  #prog .it.out{opacity:0;transform:translateY(-40px);transition:transform .35s ease-in,opacity .3s}
+  #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transition:opacity .4s}
+  #prog.on .it{opacity:1}
+  #prog .tx{display:inline-block;transform:perspective(700px) rotateX(-92deg);opacity:0;transform-origin:50% 50%;transition:transform .6s cubic-bezier(.2,.9,.25,1),opacity .25s}
+  #prog .it.in .tx{transform:perspective(700px) rotateX(0);opacity:1}
+  #prog .n{opacity:.3;transition:opacity .4s}
+  #prog .it.in .n{opacity:1}
+  #prog .it.out .tx{transform:perspective(700px) rotateX(92deg);opacity:0;transition:transform .3s ease-in,opacity .25s}
   #prog .t{position:relative;display:inline-block;font-size:clamp(20px,3.3vh,32px);font-weight:700;letter-spacing:.02em;text-shadow:0 0 6px rgba(2,6,20,1),0 0 14px rgba(2,6,20,1),0 2px 10px rgba(0,0,0,.9)}
   #prog .n{position:absolute;right:100%;margin-right:16px;top:50%;transform:translateY(-50%);font-size:clamp(11px,1.5vh,15px);color:var(--amber);letter-spacing:.08em;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(2,6,20,1)}
   /* 드래그·선택 방지 */
@@ -89,23 +93,25 @@ const Snd = (() => {
   const play = (n, v = 1) => { const a = files[n]; if (!a) return false; const c = a.cloneNode(); c.volume = v; c.play().catch(() => {}); return true; };
   const safe = f => (...a) => { try { f(...a); } catch (e) {} };
   return {
-    tick: safe((i = 0) => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;          // 벨 차임 — 항목마다 오음계로 한 음씩 올라감
-      const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.7, 1318.5, 1568, 1760], base = scale[i % scale.length];
-      [[1, .22, 1.4], [2.76, .07, .8], [5.4, .03, .5]].forEach(([r, v, d]) => {                       // 종 소리의 비조화 배음
-        const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = base * r;
-        g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(v, t + .012); g.gain.exponentialRampToValueAtTime(.001, t + d);
-        o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .05); }); }),
-    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;          // 선 긋기 — 반짝이는 패드가 부풀었다 가라앉음
-      [[220, 0], [220.8, 0], [440, .3], [660, .5], [1320, .9]].forEach(([f, dt]) => {
-        const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f;
-        g.gain.setValueAtTime(.001, t + dt); g.gain.exponentialRampToValueAtTime(f > 1000 ? .04 : .09, t + dt + .35); g.gain.exponentialRampToValueAtTime(.001, t + 1.4);
-        o.connect(g).connect(c.destination); o.start(t + dt); o.stop(t + 1.5); }); }),
+    tick: safe(() => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;                 // 카드 넘기는 "팔락" — 짧고 낮은 종이 소리
+      const b = c.createBuffer(1, c.sampleRate * .09, c.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) { const x = i / d.length; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, 2.5) * Math.min(1, x * 30); }
+      const s = c.createBufferSource(), f = c.createBiquadFilter(), f2 = c.createBiquadFilter(), g = c.createGain(); s.buffer = b;
+      f.type = 'bandpass'; f.frequency.value = 1100; f.Q.value = .7; f2.type = 'lowpass'; f2.frequency.value = 3000; g.gain.value = .5;
+      s.connect(f).connect(f2).connect(g).connect(c.destination); s.start(t);
+      const o = c.createOscillator(), og = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(90, t + .06);
+      og.gain.setValueAtTime(.12, t); og.gain.exponentialRampToValueAtTime(.001, t + .08); o.connect(og).connect(c.destination); o.start(t); o.stop(t + .09); }),
+    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;             // 선: 낮게 깔리는 은은한 스웰
+      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter(); o.type = 'triangle'; o.frequency.value = 196;
+      f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(1400, t + .6);
+      g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.07, t + .4); g.gain.exponentialRampToValueAtTime(.001, t + 1.1);
+      o.connect(f).connect(g).connect(c.destination); o.start(t); o.stop(t + 1.2); }),
   };
 })();
 
 /* 식순 오버레이 */
 const prog = $('prog'), list = $('plist'), btn = $('pbtn');
-PROGRAM.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; d.innerHTML = `<span class="t"><span class="n">${String(i + 1).padStart(2, '0')}</span>${t}</span>`; list.appendChild(d); });
+PROGRAM.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; d.innerHTML = `<span class="t"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="tx">${t}</span></span>`; list.appendChild(d); });
 const items = [...list.querySelectorAll('.it')];
 let open = false, timers = [];
 const clearT = () => { timers.forEach(clearTimeout); timers = []; };
@@ -113,7 +119,7 @@ function show(){
   if (open) return; open = true; clearT(); prog.classList.remove('closing'); prog.classList.add('on'); btn.classList.add('on'); btn.textContent = '▴ 식순 닫기';
   items.forEach(it => it.classList.remove('in', 'out'));
   timers.push(setTimeout(Snd.swoosh, 150));                                            // 선이 내려오는 소리
-  items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(i); }, 950 + i * 170)));   // 선 다 내려온 뒤 탁·탁·탁
+  items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(); }, 950 + i * 150)));   // 선 다 내려온 뒤 탁·탁·탁
 }
 function hide(){
   if (!open) return; open = false; clearT(); btn.classList.remove('on'); btn.textContent = '▾ 식순';
