@@ -163,17 +163,23 @@ const Fish = (() => {
     shark:    { src: 'shark.png',    ar: 188 / 286, belly: { x: .5, y: .6 },   faces: -1, mode: 'swim',  zone: [.15, .75], w: [240, 280], p: 1,  name: '상어', slow: .55, scary: true },
     sunfish:  { src: 'sunfish.png',  ar: 272 / 204, belly: { x: .5, y: .58 },  faces: -1, mode: 'drift', zone: [.2, .7],   w: [150, 180], p: 1,  name: '개복치', slow: .5 },
   };
+  const LK = 4;                                                                     // 번호표는 4배 해상도로 그려서 확대·회전·고배율 화면에서도 선명하게
+  const mkLbl = (t, w, h) => { const fs = Math.round(Math.min(w, h) * .17), o = document.createElement('canvas'); o.width = Math.ceil(fs * 3.2 * LK); o.height = Math.ceil(fs * 1.5 * LK); const g = o.getContext('2d');
+    g.font = `800 ${fs * LK}px Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round'; g.lineWidth = Math.max(2, w * .02) * LK; g.strokeStyle = 'rgba(255,255,255,.9)';
+    g.strokeText(t, o.width / 2, o.height / 2 + LK); g.fillStyle = '#1b2a4a'; g.fillText(t, o.width / 2, o.height / 2 + LK); return o; };
   const HUES = [0];                                                                 // 색 변형 3종, 미리 렌더링해서 재사용
   for (const k in SP) { const s = SP[k]; s.img = new Image(); s.img.src = s.src; s.v = [];
-    s.img.onload = () => { const bw = 320, bh = Math.round(bw * s.ar);
+    s.img.onload = () => { const bw = 512, bh = Math.round(bw * s.ar);
       s.v = HUES.map(h => { const o = document.createElement('canvas'); o.width = bw; o.height = bh; const g = o.getContext('2d');
         if (h) g.filter = `hue-rotate(${h}deg)`; g.drawImage(s.img, 0, 0, bw, bh); return o; }); }; }
   const hash = n => { let h = n ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };   // 같은 id → 항상 같은 결과
   const pick = id => { let r = hash(id) % 100; for (const k in SP) { r -= SP[k].p; if (r < 0) return k; } return 'fish'; };
+  (document.fonts && document.fonts.load ? document.fonts.load('800 24px Pretendard', '0123456789?') : Promise.resolve()).then(() => { for (const f of F) f.lbl = mkLbl(f.t, f.w, f.h); }).catch(() => {});
   const FLOOR = 70; const M = { x: -9999, y: -9999, t: 0 }; let sortDirty = true;
   addEventListener('mousemove', e => { M.x = e.clientX; M.y = e.clientY; M.t = performance.now(); });
   addEventListener('mouseleave', () => { M.x = M.y = -9999; });
-  const size = () => { W = c.width = innerWidth; H = c.height = innerHeight; }; size();
+  let DPR = 1, dprCap = +new URLSearchParams(location.search).get('dpr') || 1.5;                 // 선명도 상한 (주소 끝에 ?dpr=1 을 붙이면 강제로 1배)
+  const size = () => { DPR = Math.min(dprCap, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); c.style.width = W + 'px'; c.style.height = H + 'px'; }; size();
   let rzT; addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { const ow = W, oh = H; size();
     for (const f of F) { f.x = f.x / ow * W; f.y = f.y / oh * H; f.ty = f.ty / oh * H; if (SP[f.k].mode === 'walk') f.ty = H - FLOOR - f.h * .35; }
     for (const b of B) { b.x = b.x / ow * W; b.y = b.y / oh * H; } }, 150); });
@@ -186,9 +192,7 @@ const Fish = (() => {
     let px = Math.random() * W, py = s.mode === 'walk' ? H - FLOOR - h * .35 : H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0]));
     for (let i = 0; i < 20 && s.mode !== 'walk' && inZone(px, py); i++) { px = Math.random() * W; py = H * (s.zone[0] + Math.random() * (s.zone[1] - s.zone[0])); }
     const spd = (s.mode === 'swim' ? .35 + Math.random() * .6 : s.mode === 'walk' ? .15 + Math.random() * .25 : .08 + Math.random() * .15) * (s.slow || 1);
-    const lbl = (() => { const fs = Math.round(Math.min(w, h) * .17), o = document.createElement('canvas'); o.width = fs * 3.2; o.height = fs * 1.5; const g = o.getContext('2d');
-      g.font = `800 ${fs}px Pretendard, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = Math.max(2, w * .02); g.strokeStyle = 'rgba(255,255,255,.9)';
-      g.strokeText(l4 || '????', o.width / 2, o.height / 2 + 1); g.fillStyle = '#1b2a4a'; g.fillText(l4 || '????', o.width / 2, o.height / 2 + 1); return o; })();
+    const lbl = mkLbl(l4 || '????', w, h);
     F.push({ id, k, t: l4 || '????', w, h, lbl, x: fresh ? W * .5 : px, y: fresh ? H * .46 : py, ty: py,
              vx: (Math.random() < .5 ? -1 : 1) * spd, vy: 0, spd, ph: Math.random() * 7, face: 0, tvx: 0, hue: 0, born: fresh ? performance.now() : 0 });
   }
@@ -206,8 +210,15 @@ const Fish = (() => {
       x.beginPath(); x.moveTo(bx + 18, H); x.bezierCurveTo(bx + 14, H - s.h * .3, bx + 18 - sway, H - s.h * .5, bx + 18 - sway * 1.2, H - s.h * .7);
       x.lineWidth = s.w * .6; x.strokeStyle = 'rgba(0,55,75,.6)'; x.stroke(); }
   }
+  let lastT = 0, fCount = 0, fSlow = 0; const born0 = performance.now();
+  function adapt(now){                                                                  // 느린 기기 보호: 프레임이 계속 느리면 배율을 1로 낮춤
+    const dt = now - lastT; lastT = now; if (dt <= 0 || dt > 250 || now - born0 < 3000 || DPR <= 1) return;
+    fCount++; if (dt > 34) fSlow++;
+    if (fCount >= 90) { if (fSlow / fCount > .5) { dprCap = 1; size(); } fCount = fSlow = 0; }
+  }
   function frame(now){
-    x.clearRect(0, 0, W, H); sea(now);
+    adapt(now);
+    x.setTransform(DPR, 0, 0, DPR, 0, 0); x.clearRect(0, 0, W, H); sea(now);
     for (const b of B) { b.y -= b.v; b.x += Math.sin(b.a += .02) * .3; if (b.y < -5) { b.y = H + 5; b.x = Math.random() * W; }
       x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.strokeStyle = 'rgba(200,240,255,.45)'; x.lineWidth = 1.2; x.stroke(); x.beginPath(); x.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .3, 0, 7); x.fillStyle = 'rgba(255,255,255,.5)'; x.fill(); }
     const zs = zones(); const mouseOn = now - M.t < 2500;        // 마우스가 멈춘 지 2.5초 지나면 무시
@@ -272,7 +283,7 @@ const Fish = (() => {
       if (s.v.length) { x.save(); x.scale(sx, 1); x.drawImage(s.v[f.hue], -w / 2, -h / 2, w, h); x.restore(); }
       const bx = (s.belly.x - .5) * w * sx, by = (s.belly.y - .5) * h;
       x.globalAlpha = alpha * (s.faces ? Math.min(1, Math.abs(dir) * 2.5) : 1);
-      x.drawImage(f.lbl, bx - f.lbl.width * sc / 2, by - f.lbl.height * sc / 2, f.lbl.width * sc, f.lbl.height * sc); x.restore();
+      x.drawImage(f.lbl, bx - f.lbl.width / LK * sc / 2, by - f.lbl.height / LK * sc / 2, f.lbl.width / LK * sc, f.lbl.height / LK * sc); x.restore();
     }
     requestAnimationFrame(frame);
   }
@@ -329,7 +340,7 @@ setCount(0); tick(); setInterval(tick, POLL_MS);
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '0': 'screen.html', '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
+    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
 })();
 /* 간판 시계 */
 (() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
