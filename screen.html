@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>행사 화면 | 한국경제TV노조출석부</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{--ink:#00538E;--ink-deep:#003660;--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9;--amber:#ffd36a}
   *{box-sizing:border-box}
@@ -109,9 +110,24 @@ const Snd = (() => {
 
 /* 식순 오버레이 */
 const prog = $('prog'), list = $('plist'), btn = $('pbtn');
-PROGRAM.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; d.innerHTML = `<span class="t"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="tx">${t}</span></span>`; list.appendChild(d); });
-const items = [...list.querySelectorAll('.it')];
 let open = false, timers = [];
+let items = [];
+function buildList(arr){
+  list.querySelectorAll('.it').forEach(n => n.remove()); const frag = document.createDocumentFragment();
+  arr.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; const sp = document.createElement('span'); sp.className = 't';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = String(i + 1).padStart(2, '0'); sp.appendChild(n); sp.appendChild(document.createTextNode(t)); d.appendChild(sp); frag.appendChild(d); });
+  list.appendChild(frag); items = [...list.querySelectorAll('.it')];
+}
+buildList(PROGRAM);
+/* 관리자에서 저장한 식순이 있으면 교체 (열려 있지 않을 때만 반영) */
+(async () => {
+  try {
+    const sb = supabase.createClient('https://pmpifokwmrkqrmumycjx.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY');
+    const load = async () => { const { data } = await sb.from('settings').select('value').eq('key', 'program').maybeSingle();
+      const v = JSON.parse(data?.value || 'null'); if (Array.isArray(v) && v.length && !open && JSON.stringify(v) !== JSON.stringify(PROGRAM)) { PROGRAM.length = 0; v.forEach(x => PROGRAM.push(String(x))); buildList(PROGRAM); } };
+    await load(); setInterval(load, 30000);
+  } catch (e) {}
+})();
 const clearT = () => { timers.forEach(clearTimeout); timers = []; };
 function show(){
   if (open) return; open = true; clearT(); prog.classList.remove('closing'); prog.classList.add('on'); btn.classList.add('on'); btn.textContent = '▴ 식순 닫기';
