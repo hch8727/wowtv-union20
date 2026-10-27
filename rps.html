@@ -133,7 +133,7 @@ function stop(){
 function reveal(i){
   state = 'result'; const w = WINNER[i], losers = [0, 1, 2].filter(x => x !== w).map(x => HANDS[x].n).join(' · ');
   $('rBig').textContent = HANDS[i].e; $('rName').textContent = HANDS[i].n;
-  $('rWho').innerHTML = `<b>${HANDS[w].e} ${HANDS[w].n}</b> 내신 분 생존!<i>${losers} 내신 분은 자리에 앉아 주세요</i>`;
+  $('rWho').innerHTML = `<b>${HANDS[w].e} ${HANDS[w].n}</b> 내신 분 생존!<i>${losers} 내신 분은 손을 내려주세요</i>`;
   $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
   document.body.classList.add('result'); Snd.stop();
   setCtrl('<button class="main" id="bNext">다음 라운드 (Space)</button><button id="bReset">처음부터</button>');
