@@ -493,7 +493,7 @@ async function drawInner(n, append, slots){
   const done = winners.filter(w => w.prize_id === current.id && !w.cancelled).length;
   if (done >= current.winner_count) { toast('이 상품은 추첨이 끝났습니다'); return; }
 
-  if (stage.classList.contains('on')) { closeStage(); await new Promise(r => setTimeout(r, 1800)); }
+  if (stage.classList.contains('on')) { closeStage(); await new Promise(r => setTimeout(r, 1100)); }
   preloadPop(current.image_url);
   Snd.duck(true);
   // 이전 추첨 잔재 정리
@@ -525,12 +525,12 @@ async function drawInner(n, append, slots){
   $('win').className = ''; 
   if (multi) {                                        // 왼쪽부터 빠르게 차례로, 마지막 사람만 짧은 긴장 연출
     for (let i = 0; i < reels.length; i++) {
-      await reels[i].stopAt(data[i].last4, i === 0 ? 1200 : 250, { fast: true, tenseMs: i === reels.length - 1 ? 1500 : 0 });
+      await reels[i].stopAt(data[i].last4, i === 0 ? 600 : 100, { fast: true, tenseMs: i === reels.length - 1 ? 900 : 0 });
       reels[i].el.classList.add('win'); fillWho(reels[i].who, data[i]); reels[i].slot.classList.add('shown');
     }
   } else {
     const gap = reels.length > 1 ? 4200 : 0;
-    const stops = reels.map((r, i) => r.stopAt(data[i].last4, 1800 + i * gap));
+    const stops = reels.map((r, i) => r.stopAt(data[i].last4, 1000 + i * gap));
     for (let i = 0; i < stops.length; i++) {
       await stops[i];
       reels[i].el.classList.add(isFirst ? 'first' : 'win');
@@ -562,7 +562,7 @@ const reelSize = nb => { const w = Math.round(nb >= 5 ? Math.min(66, innerWidth 
 /* ── 슬롯 릴: 4자리를 왼쪽부터 한 자리씩 정지 ── */
 function makeReel(sz){
   const el = document.createElement('div'); el.className = 'reel';
-  const H = sz?.h || 320, N = 30, DIGIT_GAP = 750;
+  const H = sz?.h || 320, N = 30, DIGIT_GAP = 450;
   if (sz) el.style.setProperty('--h', H + 'px');
   const cols = Array.from({length: 4}, () => {
     const col = document.createElement('div'); col.className = 'dcol';
@@ -571,7 +571,7 @@ function makeReel(sz){
     let y = 0, speed = (34 + Math.random() * 10) * H / 320, raf, running = true;
     (function spin(){ if (!running) return; y += speed; if (y >= H * (N - 1)) y -= H * (N - 1 - 6);
       strip.style.transform = `translateY(${-y}px)`; raf = requestAnimationFrame(spin); })();
-    return { col, stop(d, D = 1000){ return new Promise(res => {
+    return { col, stop(d, D = 700){ return new Promise(res => {
       running = false; cancelAnimationFrame(raf);
       const y0 = y % H;                                            // 지금 칸 안에서 걸쳐 있는 위치를 그대로 이어받음
       const topCell = strip.children[Math.floor(y / H) % strip.children.length]?.textContent ?? (Math.random() * 10 | 0);
@@ -592,15 +592,15 @@ function makeReel(sz){
           await Promise.all(ps); $('dim').classList.add('on'); cols[3].col.classList.add('tense'); Snd.heartbeat(true);
           await new Promise(r => setTimeout(r, opt.tenseMs)); Snd.heartbeat(false); cols[3].col.classList.remove('tense');
         }
-        ps.push(cols[k].stop(digits[k], 450).then(() => { cols[k].col.classList.add('stop', 'set'); Snd.click(); }));
-        await new Promise(r => setTimeout(r, 120));
+        ps.push(cols[k].stop(digits[k], 350).then(() => { cols[k].col.classList.add('stop', 'set'); Snd.click(); }));
+        await new Promise(r => setTimeout(r, 70));
       }
       await Promise.all(ps); $('dim').classList.remove('on'); return;
     }
     for (let k = 0; k < 4; k++) {
       if (k === 3) {                                          // 마지막 자리: 암전 + 두근두근 + 길게 끌기
         $('dim').classList.add('on'); cols[3].col.classList.add('tense'); Snd.drumroll(true); Snd.heartbeat(true);   // 드럼롤을 처음부터 다시 → 반복 경계에 안 닿음
-        await new Promise(r => setTimeout(r, 2600));
+        await new Promise(r => setTimeout(r, 1800));
         Snd.heartbeat(false); cols[3].col.classList.remove('tense');
       }
       await cols[k].stop(digits[k]);
@@ -614,7 +614,7 @@ function makeReel(sz){
 /* ── 카운트다운 ── */
 function countdown(){ return new Promise(async res => {
   const cd = $('cd'); cd.classList.add('on');
-  for (const n of ['3','2','1']) { cd.innerHTML = `<span>${n}</span>`; Snd.beep(n === '1'); await new Promise(r => setTimeout(r, 800)); }
+  for (const n of ['3','2','1']) { cd.innerHTML = `<span>${n}</span>`; Snd.beep(n === '1'); await new Promise(r => setTimeout(r, 600)); }
   cd.classList.remove('on'); res();
 }); }
 
@@ -738,7 +738,7 @@ function toast(t){ const el = $('toast'); el.textContent = t; el.style.display =
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
+    const m = { '0': 'screen.html', '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
 })();
 /* 간판 시계 */
 (() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
