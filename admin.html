@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>관리자 | 한국경제TV노조출석부</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{--ink:#00538E;--gold:#1EC2F2;--gold-deep:#0E8FBE;--line:#d6e3ee;--muted:#5f7387;--bg:#f2f7fb;--err:#b42318;--ok:#1f7a4d}
   *{box-sizing:border-box}
@@ -27,6 +28,12 @@
   nav button{border:0;background:transparent;color:var(--muted);padding:8px 12px}
   nav button.on{color:var(--ink);font-weight:700;background:var(--bg)}
   main{max-width:1100px;margin:0 auto;padding:24px}
+  .qrwrap{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+  .qrform{flex:1;min-width:260px}
+  .flabel{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  .qcurl{font-size:13px;word-break:break-all;background:#f3f7fb;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .qrprev{width:340px;flex:none}
+  .qrprev canvas{width:100%;height:auto;border-radius:10px;box-shadow:0 6px 24px rgba(0,40,80,.18);background:#fff;display:block}
   .ctitle{margin:0 0 12px;font-size:15px}
   .hint{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.6}
   .upbtn{display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-size:14px;cursor:pointer;white-space:nowrap}
@@ -92,6 +99,7 @@
     <button data-p="prog">식순</button>
     <button data-p="scr">화면</button>
     <button data-p="snd">효과음</button>
+    <button data-p="qr">QR 카드</button>
     <button data-p="set">설정</button>
   </nav>
   <button id="logout">로그아웃</button>
@@ -173,6 +181,22 @@
       <p class="hint">행사 화면 어디서든 단축키로 재생됩니다(관리자 화면 제외). Esc를 누르면 재생 중인 효과음이 멈춥니다. 파일은 10MB 이하 mp3·wav·ogg·m4a를 올릴 수 있습니다.</p>
       <div id="sndList"></div>
       <div class="bar" style="margin:12px 0 0"><button id="sndAdd">효과음 추가</button><span style="flex:1"></span><button id="sndSave" class="primary">저장</button></div>
+    </div>
+  </section>
+
+  <!-- QR 카드 -->
+  <section class="panel" id="p-qr">
+    <div class="card qrwrap">
+      <div class="qrform">
+        <h3 class="ctitle">인쇄용 QR 카드</h3>
+        <p class="hint">로고는 화면 탭에 등록된 로고를 쓰고, QR은 이 사이트의 출석 주소로 자동 생성됩니다. 제목만 고친 뒤 내려받으세요. A5 크기(300dpi) PNG로 저장되며 A4에 2장씩 인쇄해도 선명합니다.</p>
+        <label class="flabel">제목</label>
+        <textarea id="qcTitle" rows="2" placeholder="예: 창립 20주년 기념행사 (Enter로 줄바꿈)" style="width:100%;resize:vertical;font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px"></textarea>
+        <label class="flabel">QR 주소</label>
+        <div id="qcUrl" class="qcurl"></div>
+        <div class="bar" style="margin:14px 0 0;gap:8px"><button id="qcDown" class="primary">PNG 내려받기</button><button id="qcPrint">인쇄</button></div>
+      </div>
+      <div class="qrprev"><canvas id="qcCanvas" width="1748" height="2480"></canvas></div>
     </div>
   </section>
 
@@ -389,6 +413,71 @@ $('sndSave').onclick = async () => {
   const bad = list.findIndex(s => !s.name || !s.src); if (bad >= 0) return toast(`${bad + 1}번째 효과음의 이름과 소리를 입력하세요`);
   const errs = keyProblems(navCfg, list); if (errs.length) return toast(errs[0]);
   await rpc('admin_set', { k: 'sounds', v: JSON.stringify(list) }); sndCfg = list; toast('효과음을 저장했습니다');
+};
+
+/* ── QR 카드 (인쇄용 PNG) ── */
+const QC = { W: 1748, H: 2480 };
+const CHECKIN_URL = location.href.replace(/admin\.html.*$/, 'checkin.html').replace(/[?#].*$/, '');
+let qcLogo = null, qcLogoSrc = '', qcTimer = null;
+function qcLoadLogo(src){
+  return new Promise(res => {
+    if (qcLogoSrc === src && qcLogo) return res(qcLogo);
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { qcLogo = im; qcLogoSrc = src; res(im); };
+    im.onerror = () => { qcLogo = null; qcLogoSrc = src; res(null); };   // 외부 로고를 못 불러오면 로고 없이
+    im.src = src;
+  });
+}
+function qcWrap(g, text, maxW){
+  const lines = []; String(text).split('\n').forEach(par => { let line = '';
+    for (const ch of par) { const t = line + ch; if (g.measureText(t).width > maxW && line) { lines.push(line); line = ch; } else line = t; }
+    lines.push(line); });
+  return lines.filter((l, i, a) => l || a.length === 1);
+}
+function qcRound(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+async function drawQrCard(){
+  const cv = $('qcCanvas'), g = cv.getContext('2d'), { W, H } = QC;
+  try { await document.fonts.load('800 120px Pretendard'); await document.fonts.load('600 50px Pretendard'); } catch {}
+  g.clearRect(0, 0, W, H); g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  // 위·아래 포인트 띠
+  const grad = g.createLinearGradient(0, 0, W, 0); grad.addColorStop(0, '#00538E'); grad.addColorStop(1, '#1EC2F2');
+  g.fillStyle = grad; g.fillRect(0, 0, W, 34); g.fillRect(0, H - 34, W, 34);
+  // 로고
+  const logo = await qcLoadLogo(brandCfg.logo || 'logo.png'); let y = 200;
+  if (logo && logo.naturalWidth) { const s = Math.min(1100 / logo.naturalWidth, 230 / logo.naturalHeight); const lw = logo.naturalWidth * s, lh = logo.naturalHeight * s; g.drawImage(logo, (W - lw) / 2, y, lw, lh); y += lh + 130; }
+  else y += 120;
+  // 제목
+  g.fillStyle = '#0b1f3a'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  let fs = 128; g.font = `800 ${fs}px Pretendard, "Malgun Gothic", sans-serif`;
+  let lines = qcWrap(g, $('qcTitle').value.trim() || ' ', 1500);
+  if (lines.length > 2) { fs = 104; g.font = `800 ${fs}px Pretendard, "Malgun Gothic", sans-serif`; lines = qcWrap(g, $('qcTitle').value.trim(), 1500).slice(0, 3); }
+  lines.forEach((l, i) => g.fillText(l, W / 2, y + fs + i * fs * 1.22)); y += fs + (lines.length - 1) * fs * 1.22;
+  if (brandCfg.org) { g.font = `600 52px Pretendard, "Malgun Gothic", sans-serif`; g.fillStyle = '#5b6f86'; g.fillText(brandCfg.org, W / 2, y + 96); y += 96; }
+  // QR
+  const box = 1060, qs = 940, bx = (W - box) / 2, by = Math.max(y + 110, 980);
+  qcRound(g, bx, by, box, box, 56); g.fillStyle = '#ffffff'; g.fill(); g.lineWidth = 10; g.strokeStyle = '#1EC2F2'; g.stroke();
+  const tmp = document.createElement('div'); new QRCode(tmp, { text: CHECKIN_URL, width: qs, height: qs, correctLevel: QRCode.CorrectLevel.M, colorDark: '#0b1f3a', colorLight: '#ffffff' });
+  const qc = tmp.querySelector('canvas'); if (qc) { g.imageSmoothingEnabled = false; g.drawImage(qc, (W - qs) / 2, by + (box - qs) / 2, qs, qs); g.imageSmoothingEnabled = true; }
+  // 안내
+  let ty = by + box + 150; g.fillStyle = '#0b1f3a'; g.font = `800 70px Pretendard, "Malgun Gothic", sans-serif`; g.fillText('휴대폰 카메라로 QR을 찍어 출석해 주세요', W / 2, ty);
+  g.fillStyle = '#5b6f86'; g.font = `600 46px Pretendard, "Malgun Gothic", sans-serif`; g.fillText('카메라 앱 또는 카카오톡 QR 스캔', W / 2, ty + 90);
+  g.fillStyle = '#9aabbd'; g.font = `500 32px Pretendard, "Malgun Gothic", sans-serif`; g.fillText(CHECKIN_URL, W / 2, H - 90);
+  return !!(logo && logo.naturalWidth) || !(brandCfg.logo);
+}
+function qcSchedule(){ clearTimeout(qcTimer); qcTimer = setTimeout(drawQrCard, 250); }
+$('qcTitle').addEventListener('input', qcSchedule);
+$('qcUrl').textContent = CHECKIN_URL;
+document.querySelector('nav button[data-p="qr"]').addEventListener('click', () => { if (!$('qcTitle').value) $('qcTitle').value = brandCfg.title || ''; drawQrCard().then(ok => { if (!ok) toast('등록된 로고를 불러오지 못해 로고 없이 표시합니다'); }); });
+$('qcDown').onclick = async () => {
+  const ok = await drawQrCard(); if (!ok) toast('로고를 불러오지 못해 로고 없이 저장합니다');
+  try { $('qcCanvas').toBlob(b => { if (!b) return toast('이미지를 만들지 못했습니다'); const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+    a.download = `QR카드_${($('qcTitle').value.trim() || '행사').replace(/[\\/:*?"<>|\n]+/g, ' ').slice(0, 40)}.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }, 'image/png'); }
+  catch (e) { toast('로고 이미지 보안 설정 때문에 저장하지 못했습니다. 로고를 이 사이트에 올린 파일로 바꿔 주세요'); }
+};
+$('qcPrint').onclick = async () => {
+  await drawQrCard(); let url; try { url = $('qcCanvas').toDataURL('image/png'); } catch (e) { return toast('로고 이미지 보안 설정 때문에 인쇄 이미지를 만들지 못했습니다'); }
+  const w = window.open('', '_blank'); if (!w) return toast('팝업이 막혀 있습니다. 내려받기를 이용해 주세요');
+  w.document.write(`<title>QR 카드</title><style>@page{size:A5;margin:0}html,body{margin:0}img{width:100%;height:auto;display:block}</style><img src="${url}" onload="setTimeout(()=>print(),200)">`); w.document.close();
 };
 
 async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings(), loadProgram(), loadScreenCfg()]); setInterval(loadAtt, 5000); }
