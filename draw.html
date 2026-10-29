@@ -200,6 +200,10 @@
          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%231EC2F2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
          background-repeat:no-repeat;background-position:right 16px center}
   select:focus{outline:3px solid var(--gold);outline-offset:2px}
+  .auto{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+  .auto small{font-size:11px;opacity:.8}
+  button.stopnow{background:#e74c3c!important;border-color:#e74c3c!important;color:#fff!important;animation:stoppulse 1s ease-in-out infinite}
+  @keyframes stoppulse{50%{box-shadow:0 0 0 8px rgba(231,76,60,.25)}}
   .log{max-height:22vh;overflow:auto;background:rgba(0,0,0,.18);border-radius:12px;padding:10px 12px;font-size:13px}
   .log h3{margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:500}
   .log .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -237,7 +241,7 @@
   </header>
 
   <section class="stage">
-    <div class="names" id="names"><span class="hint">스페이스바 또는 추첨 버튼 · 전화번호 뒷자리로 표시됩니다</span></div>
+    <div class="names" id="names"><span class="hint">스페이스바로 추첨 시작 → 누를 때마다 하나씩 멈춤 · 전화번호 뒷자리로 표시됩니다</span></div>
     <div class="prize" id="prizeTitle">상품을 선택하세요</div>
     <div class="prev" id="prev"></div>
     <div class="ctrl">
@@ -251,6 +255,7 @@
   <aside>
     <div class="pool">추첨 대상 <b id="poolN">0</b>명 <span style="color:var(--muted)">/ 출석 <span id="totalN">0</span>명</span></div>
     <select id="prizeSel"></select>
+    <label class="auto"><input type="checkbox" id="autoStop"> 자동 멈춤 <small>(끄면 스페이스바로 하나씩 멈춤)</small></label>
     <div class="log"><h3>당첨 기록</h3><div id="log"></div></div>
   </aside>
 </div>
@@ -290,8 +295,12 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 let PW = sessionStorage.getItem('union20_pw') || '';
 let prizes = [], people = [], winners = [], current = null, lastDraw = [], busy = false;
-const BATCH = { 5: 5, 4: 3, 3: 3 };                   // 등수별 한 번에 뽑는 인원 (적혀 있지 않은 등수는 1명씩)
-const batchOf = p => p ? (BATCH[p.rank] || 1) : 1;
+const batchOf = p => p ? Math.max(1, +p.draw_batch || 1) : 1;      // 상품별 한 번에 뽑는 인원 (관리자에서 설정)
+/* 멈춤 신호: 스페이스바/버튼을 누를 때마다 하나씩 멈춤 (빠르게 여러 번 누르면 차례로 처리) */
+let autoStop = localStorage.getItem('union20_auto') === '1', awaiting = false, sigN = 0, sigWait = null;
+const signal = () => { if (sigWait) { const r = sigWait; sigWait = null; r(); } else sigN++; };
+const waitSignal = () => sigN > 0 ? (sigN--, Promise.resolve()) : new Promise(r => { sigWait = r; });
+function setStopBtn(on){ const b = $('btnDraw'); b.classList.toggle('stopnow', on); if (on) { b.disabled = false; b.textContent = '멈춤 (Space)'; } }
 const leftOf = p => p ? p.winner_count - winners.filter(w => w.prize_id === p.id && !w.cancelled).length : 0;
 const SPECIES = [['clown', 13, '흰동가리'], ['blue', 11, '파랑물고기'], ['tang', 10, '노랑파랑 열대어'], ['purple', 9, '보라 열대어'], ['turtle', 8, '바다거북'], ['jelly', 8, '해파리'], ['ray', 7, '가오리'], ['squid', 6, '오징어'], ['seahorse', 6, '해마'], ['shrimp', 6, '새우'], ['octopus', 5, '문어'], ['crab', 5, '꽃게'], ['star', 4, '불가사리'], ['shark', 1, '상어'], ['sunfish', 1, '개복치']];
 const hash = n => { let h = n ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };
@@ -371,7 +380,7 @@ $('log').onclick = async e => {
 $('prizeSel').onchange = () => {
   current = prizeOf(+$('prizeSel').value); if (!current.id) current = null;
   $('prizeTitle').innerHTML = current ? `<b>${current.rank}등</b>${pname(current)}` : '상품을 선택하세요';
-  $('names').innerHTML = '<span class="hint">스페이스바 또는 추첨 버튼 · 전화번호 뒷자리로 표시됩니다</span>'; $('names').className = 'names';
+  $('names').innerHTML = '<span class="hint">스페이스바로 추첨 시작 → 누를 때마다 하나씩 멈춤 · 전화번호 뒷자리로 표시됩니다</span>'; $('names').className = 'names';
   $('win').className = ''; $('prev').innerHTML = ''; lastDraw = [];
   $('btnDraw').disabled = !current; $('btnDraw').textContent = '추첨'; $('btnRedraw').disabled = true; $('btnRedraw').textContent = '부재 → 재추첨'; $('btnNext').disabled = !current;
   renderPrize();
@@ -433,7 +442,9 @@ $('stClose').onclick = closeStage;
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStage(); });
 
 /* ── 추첨 ── */
-$('btnDraw').onclick = () => {
+$('btnDraw').onclick = e => {
+  e?.currentTarget?.blur?.();
+  if (awaiting) return signal();
   if (isMulti() && $('names').querySelector('.slot.absent')) return toast('부재 체크된 자리가 있습니다. 먼저 "부재 재추첨"을 누르거나 체크를 풀어주세요');
   draw(Math.max(1, Math.min(batchOf(current), leftOf(current))));
 };
@@ -446,6 +457,8 @@ async function redraw(bad){
   lastDraw = lastDraw.filter(x => x !== bad);
   draw(1, true);
 }
+$('autoStop').checked = autoStop;
+$('autoStop').onchange = e => { autoStop = e.target.checked; localStorage.setItem('union20_auto', autoStop ? '1' : '0'); e.target.blur(); };
 const isMulti = () => $('names').classList.contains('multi');
 function updAbsent(){ const k = $('names').querySelectorAll('.slot.absent').length; $('btnRedraw').textContent = k ? `부재 ${k}명 재추첨` : '부재 → 재추첨'; }
 $('btnRedraw').onclick = async () => {
@@ -476,13 +489,14 @@ $('btnNext').onclick = () => {
   if (prizes[i + 1]) { $('prizeSel').value = prizes[i + 1].id; $('prizeSel').onchange(); }
 };
 document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && awaiting && !$('ask').classList.contains('on')) { e.preventDefault(); signal(); return; }
   if (e.code === 'Space' && !$('btnDraw').disabled && !busy && !$('ask').classList.contains('on')) { e.preventDefault(); $('btnDraw').click(); }
 });
 
 async function draw(n, append = false, slots = null){
   try { await drawInner(n, append, slots); }
   catch (e) { toast('오류: ' + (e.message || e)); console.error(e); }
-  finally { Snd.drumroll(false); Snd.heartbeat(false); setTimeout(() => Snd.duck(false), 4500); $('dim').classList.remove('on'); $('cd').classList.remove('on'); busy = false; renderPrize(); }
+  finally { awaiting = false; sigWait = null; sigN = 0; setStopBtn(false); Snd.drumroll(false); Snd.heartbeat(false); setTimeout(() => Snd.duck(false), 4500); $('dim').classList.remove('on'); $('cd').classList.remove('on'); busy = false; renderPrize(); }
 }
 async function drawInner(n, append, slots){
   if (busy || !current) return; busy = true;
@@ -504,8 +518,8 @@ async function drawInner(n, append, slots){
   const req = sb.rpc('admin_draw', { pw: PW, p_prize: current.id, n });   // 서버에서 먼저 확정
   const box = $('names'); let reels;
   if (multi) {                                        // 여러 명: 작은 릴 + 이름표 슬롯
-    const nb = batchOf(current) >= 5 ? 5 : 3, sz = reelSize(nb);
-    box.className = `names rolling multi n${nb}`;
+    const sz = reelSize(batchOf(current));
+    box.className = 'names rolling multi';
     if (!slots) box.innerHTML = '';
     reels = Array.from({length: n}, () => makeReel(sz));
     const els = reels.map(r => { const s = document.createElement('div'); s.className = 'slot'; s.appendChild(r.el); const w = document.createElement('div'); w.className = 'who'; s.appendChild(w); r.slot = s; r.who = w; return s; });
@@ -523,7 +537,22 @@ async function drawInner(n, append, slots){
 
   const isFirst = current.rank === 1;
   $('win').className = ''; 
-  if (multi) {                                        // 왼쪽부터 빠르게 차례로, 마지막 사람만 짧은 긴장 연출
+  if (!autoStop) {                                    // 진행자 신호로 멈춤: 여러 명이면 한 사람씩, 1명이면 한 자리씩
+    sigN = 0; awaiting = true; setStopBtn(true);
+    if (multi) {
+      for (let i = 0; i < reels.length; i++) {
+        const last = reels.length > 1 && i === reels.length - 1;      // 마지막 사람은 신호를 기다리는 동안만 긴장 연출
+        if (last) { $('dim').classList.add('on'); reels[i].cols.forEach(c => c.col.classList.add('tense')); Snd.heartbeat(true); }
+        await waitSignal();
+        if (last) { Snd.heartbeat(false); reels[i].cols.forEach(c => c.col.classList.remove('tense')); }
+        await reels[i].stopAt(data[i].last4, 0, { fast: true });
+        reels[i].el.classList.add('win'); fillWho(reels[i].who, data[i]); reels[i].slot.classList.add('shown');
+      }
+    } else {
+      for (let i = 0; i < reels.length; i++) { await reels[i].stopManual(data[i].last4); reels[i].el.classList.add(isFirst ? 'first' : 'win'); }
+    }
+    awaiting = false; setStopBtn(false);
+  } else if (multi) {                                 // 자동: 왼쪽부터 빠르게 차례로, 마지막 사람만 짧은 긴장 연출
     for (let i = 0; i < reels.length; i++) {
       await reels[i].stopAt(data[i].last4, i === 0 ? 600 : 100, { fast: true, tenseMs: i === reels.length - 1 ? 900 : 0 });
       reels[i].el.classList.add('win'); fillWho(reels[i].who, data[i]); reels[i].slot.classList.add('shown');
@@ -557,7 +586,7 @@ function fillWho(el, d){
   const [bk, bn] = buddyOf(d.attendee_id || 0), rare = bk === 'shark' || bk === 'sunfish';
   el.innerHTML = `<img src="${bk}.png" alt="">${esc(d.name || '')}<small>${rare ? '✨ 레어 ' : ''}${bn}</small>`;
 }
-const reelSize = nb => { const w = Math.round(nb >= 5 ? Math.min(66, innerWidth * .033) : Math.min(105, innerWidth * .052)); return { w, h: Math.round(w * (nb >= 5 ? 1.6 : 1.5)) }; };
+const reelSize = n => { const per = n <= 6 ? n : Math.ceil(n / 2), w = Math.floor(Math.min(105, ((innerWidth * .84 - (per - 1) * 22) / per - 29) / 4)); return { w, h: Math.round(w * 1.55) }; };
 
 /* ── 슬롯 릴: 4자리를 왼쪽부터 한 자리씩 정지 ── */
 function makeReel(sz){
@@ -582,7 +611,17 @@ function makeReel(sz){
         strip.style.transform = `translateY(${-y0 + dist * e}px)`; k < 1 ? requestAnimationFrame(ease) : res(); })(t0);
     }); } };
   });
-  return { el, async stopAt(val, delay, opt = {}){
+  return { el, cols, async stopManual(val){
+    const digits = String(val || '????').padStart(4, '?').slice(-4).split('');
+    for (let k = 0; k < 4; k++) {
+      if (k === 3) { $('dim').classList.add('on'); cols[3].col.classList.add('tense'); Snd.drumroll(true); Snd.heartbeat(true); }   // 마지막 자리: 신호 올 때까지 긴장
+      await waitSignal();
+      if (k === 3) { Snd.heartbeat(false); cols[3].col.classList.remove('tense'); }
+      await cols[k].stop(digits[k]); cols[k].col.classList.add('stop', 'set'); Snd.click();
+      if (k < 3) Snd.riser();
+    }
+    $('dim').classList.remove('on');
+  }, async stopAt(val, delay, opt = {}){
     await new Promise(r => setTimeout(r, delay));
     const digits = String(val || '????').padStart(4, '?').slice(-4).split('');
     if (opt.fast) {                                           // 여러 명: 네 자리를 겹쳐서 빠르게 정지
@@ -738,7 +777,7 @@ function toast(t){ const el = $('toast'); el.textContent = t; el.style.display =
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '0': 'screen.html', '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
+    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
 })();
 /* 간판 시계 */
 (() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();

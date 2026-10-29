@@ -105,7 +105,8 @@
         <input id="pOrder" type="number" placeholder="순서" style="width:70px" title="진행 순서(작을수록 먼저)">
         <input id="pRank" type="number" placeholder="등수" style="width:70px">
         <input id="pName" placeholder="상품명" style="flex:1">
-        <input id="pCount" type="number" placeholder="인원" style="width:70px" value="1">
+        <input id="pCount" type="number" placeholder="인원" style="width:70px" value="1" title="이 상품의 총 당첨 인원">
+        <input id="pBatch" type="number" placeholder="한 번에" style="width:80px" value="1" min="1" title="추첨 버튼 한 번에 뽑을 인원">
         <button id="pSave" class="primary">추가</button><button id="pCancel" style="display:none">취소</button>
       </div>
       <div class="bar" style="margin:10px 0 0">
@@ -114,7 +115,7 @@
         <img id="pImgPrev" alt="" style="height:44px;width:auto;border-radius:6px;background:#eef3f8;display:none">
       </div>
     </div>
-    <table><thead><tr><th>순서</th><th>등수</th><th>상품명</th><th>인원</th><th></th></tr></thead><tbody id="prizeBody"></tbody></table>
+    <table><thead><tr><th>순서</th><th>등수</th><th>상품명</th><th>인원</th><th>한 번에</th><th></th></tr></thead><tbody id="prizeBody"></tbody></table>
     <p style="color:var(--muted);font-size:13px">진행 순서는 작은 번호부터. 1등은 마지막 순서로 두세요.</p>
   </section>
 
@@ -291,14 +292,15 @@ $('btnXlsx').onclick = () => {
 /* 상품 */
 async function loadPrizes(){
   prizes = (await sb.from('prizes').select('*').order('draw_order')).data || [];
-  $('prizeBody').innerHTML = prizes.map(p => `<tr><td>${p.draw_order}</td><td>${p.rank}등</td><td>${p.image_url ? `<img src="${esc(p.image_url)}" style="height:28px;width:auto;vertical-align:middle;margin-right:8px;border-radius:4px">` : ''}${esc(p.name)}</td><td>${p.winner_count}명</td>
+  $('prizeBody').innerHTML = prizes.map(p => `<tr><td>${p.draw_order}</td><td>${p.rank}등</td><td>${p.image_url ? `<img src="${esc(p.image_url)}" style="height:28px;width:auto;vertical-align:middle;margin-right:8px;border-radius:4px">` : ''}${esc(p.name)}</td><td>${p.winner_count}명</td><td>${p.draw_batch || 1}명씩</td>
     <td style="text-align:right"><button data-e="${p.id}" style="padding:4px 8px;font-size:12px">수정</button> <button data-d="${p.id}" style="padding:4px 8px;font-size:12px">삭제</button></td></tr>`).join('')
-    || '<tr><td colspan="5" style="color:var(--muted);text-align:center">등록된 상품이 없습니다</td></tr>';
+    || '<tr><td colspan="6" style="color:var(--muted);text-align:center">등록된 상품이 없습니다</td></tr>';
 }
 $('pSave').onclick = async () => {
-  const [o, r, n, c] = [+$('pOrder').value, +$('pRank').value, $('pName').value.trim(), +$('pCount').value];
+  const [o, r, n, c, bt] = [+$('pOrder').value, +$('pRank').value, $('pName').value.trim(), +$('pCount').value, +$('pBatch').value || 1];
   if (!o || !r || !n || !c) return toast('순서·등수·상품명·인원을 모두 입력하세요');
-  await rpc('admin_prize_save', { p_id: editId, p_rank: r, p_name: n, p_count: c, p_order: o, p_image: $('pImg').value.trim() || null });
+  if (bt < 1 || bt > c) return toast('한 번에 뽑을 인원은 1명 이상, 총 인원 이하로 입력하세요');
+  await rpc('admin_prize_save', { p_id: editId, p_rank: r, p_name: n, p_count: c, p_order: o, p_image: $('pImg').value.trim() || null, p_batch: bt });
   resetPrizeForm(); loadPrizes();
 };
 $('pCancel').onclick = resetPrizeForm;
@@ -313,10 +315,10 @@ $('pFile').onchange = async e => {
   $('pImg').value = sb.storage.from('prizes').getPublicUrl(path).data.publicUrl; $('pImg').oninput(); toast('업로드했습니다. 저장을 눌러 반영하세요');
 };
 $('pImg').oninput = () => { const v = $('pImg').value.trim(), im = $('pImgPrev'); im.style.display = v ? '' : 'none'; if (v) im.src = v; };
-function resetPrizeForm(){ editId = null; ['pOrder','pRank','pName','pImg'].forEach(i => $(i).value = ''); $('pImgPrev').style.display = 'none'; $('pCount').value = 1; $('pSave').textContent = '추가'; $('pCancel').style.display = 'none'; }
+function resetPrizeForm(){ editId = null; ['pOrder','pRank','pName','pImg'].forEach(i => $(i).value = ''); $('pImgPrev').style.display = 'none'; $('pCount').value = 1; $('pBatch').value = 1; $('pSave').textContent = '추가'; $('pCancel').style.display = 'none'; }
 $('prizeBody').onclick = async e => {
   const eid = e.target.dataset.e, did = e.target.dataset.d;
-  if (eid) { const p = prizes.find(x => x.id == eid); editId = p.id; $('pOrder').value = p.draw_order; $('pRank').value = p.rank; $('pName').value = p.name; $('pCount').value = p.winner_count; $('pImg').value = p.image_url || ''; $('pImg').oninput(); $('pSave').textContent = '저장'; $('pCancel').style.display = ''; }
+  if (eid) { const p = prizes.find(x => x.id == eid); editId = p.id; $('pOrder').value = p.draw_order; $('pRank').value = p.rank; $('pName').value = p.name; $('pCount').value = p.winner_count; $('pBatch').value = p.draw_batch || 1; $('pImg').value = p.image_url || ''; $('pImg').oninput(); $('pSave').textContent = '저장'; $('pCancel').style.display = ''; }
   if (did && await ask('상품 삭제', '이 상품을 삭제할까요?', '삭제')) { await rpc('admin_prize_delete', { p_id: +did }); loadPrizes(); }
 };
 

@@ -18,6 +18,13 @@
   header{display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
   .panel{display:flex;align-items:center;gap:26px;background:rgba(0,25,55,.42);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:16px 22px 16px 28px}
   .brand{width:380px;height:auto;background:#fff;padding:12px 18px;border-radius:12px;box-sizing:content-box}
+  .panel{position:relative;transition:padding .3s}
+  .pmin{position:absolute;top:-10px;right:-10px;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,25,55,.85);color:#fff;font-size:16px;line-height:1;cursor:pointer;pointer-events:auto;opacity:0;transition:opacity .3s;font-family:inherit;display:grid;place-items:center;padding:0}
+  body.navon .pmin,.pmin:focus-visible{opacity:1}
+  body.pmini .panel{padding:8px 20px;gap:0}
+  body.pmini .panel .label,body.pmini .panel .qrbox{display:none}
+  body.pmini .panel .count{font-size:54px}
+  body.pmini .panel .unit{font-size:18px;padding-bottom:1.1em}
   .label{font-size:17px;color:var(--gold-soft);font-weight:500;letter-spacing:.02em;margin-bottom:2px}
   .count{font-size:112px;line-height:1;font-weight:800;letter-spacing:0;font-variant-numeric:tabular-nums;vertical-align:bottom}
   .count.bump{animation:bump .45s cubic-bezier(.2,.9,.3,1.4);transform-origin:center}
@@ -62,7 +69,9 @@
   /* 종류 필터 바 (마우스 움직일 때만 표시) */
   .filt{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;background:rgba(0,25,55,.6);backdrop-filter:blur(8px);
         padding:8px;border-radius:999px;z-index:6;opacity:0;transition:opacity .3s;pointer-events:none;border:1px solid rgba(255,255,255,.12)}
-  body.navon .filt,.filt.active{opacity:1;pointer-events:auto}
+  body.navon .filt,.filt.active,.filt.pinned{opacity:1;pointer-events:auto}
+  .filt button.pin{font-size:18px;opacity:.55}
+  .filt button.pin.on{opacity:1;border-color:var(--gold);background:rgba(30,194,242,.3)}
   .filt button{width:48px;height:48px;border-radius:50%;border:2px solid transparent;background:rgba(255,255,255,.08);padding:4px;cursor:pointer;position:relative;display:grid;place-items:center}
   .filt button img{max-width:36px;max-height:36px;pointer-events:none}
   .filt button:hover{background:rgba(255,255,255,.18)}
@@ -91,6 +100,7 @@
   <div class="panel">
     <div><div class="label">지금까지 출석하신 분</div><div class="countRow"><span class="count" id="count">0</span><span class="unit">명</span></div></div>
     <div class="qrbox"><div class="qr" id="qr"></div><p><b>QR 출석</b>카메라 · 카카오톡 스캔</p></div>
+    <button class="pmin" id="pmin" title="작게 / 크게">–</button>
   </div>
   </header>
 
@@ -133,6 +143,10 @@ async function tick(){
   lastIds = cur; primed = true;
 }
 /* 7. 숫자 롤업 — 자리별 세로 롤러 */
+/* 우상단 패널 작게/크게 */
+(() => { const b = document.getElementById('pmin'), apply = on => { document.body.classList.toggle('pmini', on); b.textContent = on ? '+' : '–'; b.title = on ? 'QR 보이기' : '작게 (참여자 수만)'; };
+  apply(localStorage.getItem('union20_pmini') === '1');
+  b.onclick = () => { const on = !document.body.classList.contains('pmini'); apply(on); localStorage.setItem('union20_pmini', on ? '1' : '0'); b.blur(); }; })();
 function setCount(n){
   const str = String(n), cur = $count.querySelectorAll('.digit');
   if (cur.length !== str.length) {
@@ -184,7 +198,7 @@ const Fish = (() => {
     for (const f of F) { f.x = f.x / ow * W; f.y = f.y / oh * H; f.ty = f.ty / oh * H; if (SP[f.k].mode === 'walk') f.ty = H - FLOOR - f.h * .35; }
     for (const b of B) { b.x = b.x / ow * W; b.y = b.y / oh * H; } }, 150); });
   for (let i = 0; i < 36; i++) B.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: 1.5 + Math.random() * 5, v: .25 + Math.random() * .6, a: Math.random() * 7 });
-  const zones = () => [{ x: W * .78, y: H * .13, rx: W * .26, ry: H * .2 }, { x: W * .18, y: H * .08, rx: W * .22, ry: H * .13 }];   // 우상단 패널·로고 영역은 비켜 다님
+  const zones = () => [document.body.classList.contains('pmini') ? { x: W * .92, y: H * .08, rx: W * .09, ry: H * .1 } : { x: W * .78, y: H * .13, rx: W * .26, ry: H * .2 }, { x: W * .18, y: H * .08, rx: W * .22, ry: H * .13 }];   // 우상단 패널·로고 영역은 비켜 다님
   const inZone = (px, py) => zones().some(z => ((px - z.x) / z.rx) ** 2 + ((py - z.y) / z.ry) ** 2 < 1);
   function add(id, l4, fresh){
     if (seen.has(id)) return; seen.add(id); sortDirty = true;
@@ -292,13 +306,18 @@ const Fish = (() => {
     for (let i = 0; i < 10; i++) B.push({ x: f.x + (Math.random() - .5) * f.w, y: f.y + (Math.random() - .5) * f.h, r: 2 + Math.random() * 5, v: .8 + Math.random() * 1.2, a: Math.random() * 7 }); }
   let filter = null;                                                  // 현재 보이는 종류 (null = 전체)
   function setFilter(k){ filter = (filter === k) ? null : k; renderFilt(); document.getElementById('filt').classList.toggle('active', !!filter); }
+  let pinned = localStorage.getItem('union20_fpin') === '1';
   function renderFilt(){
     const cnt = {}; for (const f of F) if (!f.dying) cnt[f.k] = (cnt[f.k] || 0) + 1;
     const el = document.getElementById('filt');
     el.innerHTML = `<button class="all ${filter ? '' : 'on'}" data-k="">전체</button>` + Object.keys(SP).map(k =>
-      `<button class="${filter === k ? 'on' : ''}" data-k="${k}" title="${SP[k].name}"><img src="${SP[k].src}" alt="${SP[k].name}">${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`).join('');
+      `<button class="${filter === k ? 'on' : ''}" data-k="${k}" title="${SP[k].name}"><img src="${SP[k].src}" alt="${SP[k].name}">${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`).join('')
+      + `<button class="pin ${pinned ? 'on' : ''}" data-pin="1" title="${pinned ? '고정 해제' : '항상 보이게 고정'}">📌</button>`;
+    el.classList.toggle('pinned', pinned);
   }
-  document.getElementById('filt').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setFilter(b.dataset.k || null); b.blur(); });
+  document.getElementById('filt').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.pin) { pinned = !pinned; localStorage.setItem('union20_fpin', pinned ? '1' : '0'); renderFilt(); b.blur(); return; }
+    setFilter(b.dataset.k || null); b.blur(); });
   renderFilt();
   const _add = add, _remove = remove;
   return { add(...a){ _add(...a); renderFilt(); }, remove(...a){ _remove(...a); setTimeout(renderFilt, 800); } };
