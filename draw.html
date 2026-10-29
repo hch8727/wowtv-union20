@@ -209,6 +209,8 @@
   .log .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08)}
   .log .row s{color:var(--muted)}
   .log .row button{font-size:11px;padding:3px 7px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.2)}
+  .log .row .acts{display:flex;gap:4px;flex:none}
+  .log .row button[data-ab]{color:#ffb3a8;border-color:rgba(231,76,60,.45)}
   .log .tag{color:var(--gold-soft);margin-right:8px;font-weight:600}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ink);padding:10px 18px;border-radius:10px;font-size:15px;display:none}
   @media (prefers-reduced-motion:reduce){.names.win .name{animation:none}}
@@ -368,9 +370,23 @@ function renderLog(){
   if (busy) return;
   $('log').innerHTML = [...winners].reverse().map(w => `<div class="row">
     <span><span class="tag">${prizeOf(w.prize_id).rank ?? '?'}등</span>${w.cancelled ? `<s>${l4Of(w.attendee_id)} ${esc(nameOf(w.attendee_id))}</s> <small style="color:var(--muted)">${w.absent ? '부재' : '취소'}</small>` : `${l4Of(w.attendee_id)} <span style="color:var(--muted)">${esc(nameOf(w.attendee_id))}</span>`}</span>
-    ${w.cancelled ? '' : `<button data-c="${w.id}">취소</button>`}</div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
+    <span class="acts">${w.cancelled ? (w.absent ? '' : `<button data-ab="${w.id}" title="취소한 사람을 부재로 바꿔 이후 추첨에서 제외">부재로</button>`) : `<button data-ab="${w.id}" title="이후 추첨에서 제외하고 빈자리를 만듦">부재</button><button data-c="${w.id}" title="운영 실수 정정: 다시 추첨 대상에 포함">취소</button>`}</span></div>`).join('') || '<span style="color:var(--muted)">아직 없음</span>';
 }
 $('log').onclick = async e => {
+  const ab = e.target.dataset.ab;
+  if (ab) {                                           // 나중에라도 부재 처리 (취소했던 사람을 부재로 바꾸기 포함)
+    if (busy) return toast('추첨이 끝난 뒤에 처리해 주세요');
+    const wv = winners.find(w => w.id == ab); if (!wv) return; const was = wv.cancelled, rk = prizeOf(wv.prize_id).rank ?? '?';
+    const who = `${l4Of(wv.attendee_id)} ${nameOf(wv.attendee_id)}`.trim();
+    if (!await ask('부재 처리', was ? `${who} 님을 부재로 바꿀까요? 이후 모든 추첨에서 제외됩니다.` : `${who} 님(${rk}등)을 부재 처리할까요? 이후 모든 추첨에서 제외되고 ${rk}등에 빈자리가 1명 생깁니다.`, '부재 처리', true)) return;
+    const { error } = await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +ab, p_absent: true });
+    if (error) return toast('오류: ' + error.message);
+    const idx = lastDraw.findIndex(d => d.winner_id == ab);                  // 지금 화면에 떠 있는 당첨자면 부재 도장
+    if (!was && idx >= 0 && isMulti()) { $('names').querySelectorAll('.slot')[idx]?.classList.add('absent'); updAbsent(); }
+    await refresh();
+    toast(was ? `${who} 님을 부재로 바꿨습니다 — 이후 추첨에서 제외됩니다` : `${who} 님 부재 처리 — ${rk}등을 선택해 빈자리를 추첨하세요`);
+    return;
+  }
   const id = e.target.dataset.c; if (!id) return;
   const wv = winners.find(w => w.id == id); if (!await ask('당첨 취소', `${l4Of(wv.attendee_id)} ${nameOf(wv.attendee_id)} 님의 당첨을 취소할까요? 이 사람은 다시 추첨 대상에 포함됩니다.`, '취소 처리', true)) return;
   await sb.rpc('admin_cancel_winner', { pw: PW, p_winner: +id }); await refresh(); toast('당첨을 취소했습니다 — 다시 추첨 대상에 포함됩니다');
