@@ -161,7 +161,7 @@
     </div>
     <div class="card">
       <h3 class="ctitle">메뉴 · 단축키</h3>
-      <p class="hint">행사 화면 위쪽 메뉴와 런처 카드의 순서·이름·표시 여부, 화면 이동 단축키를 정합니다. 단축키 칸을 누르고 키보드 키를 누르면 등록되고, Backspace로 지웁니다. Space·R·?는 예약되어 쓸 수 없습니다.</p>
+      <p class="hint">행사 화면 위쪽 메뉴와 런처 카드의 순서·이름·표시 여부, 화면 이동 단축키를 정합니다. 단축키 칸을 누르고 키보드 키를 누르면 등록되고, Backspace로 지웁니다. Space·R·?와 0(메인 화면)은 예약되어 쓸 수 없습니다.</p>
       <div id="navList"></div>
       <div class="bar" style="margin:12px 0 0;justify-content:flex-end"><button id="navSave" class="primary">저장</button></div>
     </div>
@@ -298,7 +298,7 @@ const DEF_NAV = [{ page: 'monitor.html', label: '출석 현황', key: '1', show:
 const DEF_SOUNDS = [{ name: '박수', src: 'builtin:applause', key: 'q', vol: .9 }, { name: '팡파르', src: 'builtin:fanfare', key: 'w', vol: .9 }, { name: '딩동댕', src: 'builtin:ding', key: 'e', vol: .8 }];
 const DEF_BRAND = { logo: 'logo.png', h: 34, title: '창립 20주년 기념행사', org: '한국경제TV 노동조합' };
 const BUILTINS = [['builtin:applause', '박수 (기본)'], ['builtin:fanfare', '팡파르 (기본)'], ['builtin:ding', '딩동댕 (기본)'], ['builtin:drum', '드럼롤 (기본)']];
-const RESERVED = [' ', 'r', '?'];
+const RESERVED = [' ', 'r', '?', '0'];
 let navCfg = [], sndCfg = [], brandCfg = {};
 async function loadScreenCfg(){
   const { data } = await sb.from('settings').select('key,value').in('key', ['nav', 'sounds', 'brand']);
@@ -315,7 +315,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Backspace' || e.key === 'Delete') { el.value = ''; return; }
   const m = /^Key([A-Z])$/.exec(e.code) || /^(?:Digit|Numpad)(\d)$/.exec(e.code);
   if (!m) return toast('영문 한 글자 또는 숫자만 쓸 수 있습니다');
-  const k = m[1].toLowerCase(); if (RESERVED.includes(k)) return toast(`${k.toUpperCase()}는 예약된 키입니다`);
+  const k = m[1].toLowerCase(); if (RESERVED.includes(k)) return toast(k === '0' ? '0은 메인 화면 이동 키로 예약되어 있습니다' : `${k.toUpperCase()}는 예약된 키입니다`);
   el.value = k.toUpperCase();
 }, true);
 function keyProblems(navList, sndList){

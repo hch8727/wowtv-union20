@@ -79,7 +79,7 @@
     el.style.cssText = 'position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:rgba(0,8,20,.6);backdrop-filter:blur(4px);font-family:Pretendard,sans-serif;color:#fff';
     const row = (k, t) => `<div style="display:flex;gap:14px;align-items:center;padding:5px 0"><kbd style="min-width:34px;text-align:center;background:rgba(255,255,255,.15);border-radius:8px;padding:4px 10px;font:700 15px Pretendard,sans-serif">${esc(k)}</kbd><span>${esc(t)}</span></div>`;
     el.innerHTML = `<div style="background:rgba(0,25,55,.9);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:24px 30px;min-width:340px;max-height:80vh;overflow:auto">
-      <div style="font-size:13px;color:#8fe3ff;margin-bottom:6px">화면 이동</div>${navItems().filter(n => n.key).map(n => row(n.key.toUpperCase(), n.label + (n.show === false ? ' (메뉴 숨김)' : ''))).join('')}
+      <div style="font-size:13px;color:#8fe3ff;margin-bottom:6px">화면 이동</div>${row('0', '메인 화면')}${navItems().filter(n => n.key).map(n => row(n.key.toUpperCase(), n.label + (n.show === false ? ' (메뉴 숨김)' : ''))).join('')}
       <div style="font-size:13px;color:#8fe3ff;margin:14px 0 6px">효과음</div>${soundItems().filter(s => s.key).map(s => row(s.key.toUpperCase(), s.name)).join('') || '<div style="color:#8fb0c9">등록된 효과음 없음</div>'}
       <div style="font-size:12px;color:#8fb0c9;margin-top:14px">? 키로 닫기 · Esc는 효과음 정지</div></div>`;
     el.onclick = () => el.remove(); document.body.appendChild(el);
@@ -95,6 +95,7 @@
     if (e.key === '?') { help(); return; }
     const k = e.key.length === 1 ? e.key.toLowerCase() : '';
     if (!k || k === ' ') return;
+    if (k === '0') { if (here !== 'screen.html') location.href = 'screen.html'; return; }   // 0: 어디서든 메인(런처)
     const n = navItems().find(x => (x.key || '').toLowerCase() === k);
     if (n) { if (n.page !== here) location.href = n.page; return; }
     const s = soundItems().find(x => (x.key || '').toLowerCase() === k);

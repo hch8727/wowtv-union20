@@ -36,6 +36,11 @@
   #prog .it.in .t{transform:perspective(700px) rotateX(0);opacity:1}
   #prog .t{position:relative;display:inline-block;font-size:clamp(20px,3.3vh,32px);font-weight:700;letter-spacing:.02em;text-shadow:0 0 6px rgba(2,6,20,1),0 0 14px rgba(2,6,20,1),0 2px 10px rgba(0,0,0,.9)}
   #prog .n{position:absolute;right:100%;margin-right:16px;top:50%;transform:translateY(-50%);font-size:clamp(11px,1.5vh,15px);color:var(--amber);letter-spacing:.08em;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(2,6,20,1)}
+  #prog .it .t{transition:transform .6s cubic-bezier(.2,.9,.25,1),opacity .35s,color .35s,text-shadow .35s}
+  #prog .it.in.past .t{opacity:.36}
+  #prog .it.in.cur .t{transform:perspective(700px) rotateX(0) scale(1.18);color:#fff;text-shadow:0 0 6px rgba(2,6,20,1),0 0 22px rgba(255,211,106,.85),0 0 46px rgba(255,211,106,.45)}
+  #prog .it.cur .n{color:#fff;text-shadow:0 0 10px rgba(255,211,106,1)}
+  #prog .it.cur .t::before{content:"";position:absolute;left:50%;bottom:-.32em;width:60%;height:2px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,#ffd36a,transparent);box-shadow:0 0 10px rgba(255,211,106,.8)}
   .replay{position:fixed;right:20px;bottom:16px;font-size:12px;color:var(--muted);opacity:.6}
 </style>
 </head>
@@ -43,7 +48,7 @@
   <div class="sign"><div class="lg"><img src="logo.png" alt=""></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
   <nav class="snav"></nav>
   <div id="prog"><div class="wrap"><div class="eyebrow" data-brand="title">창립 20주년 기념행사</div><h2>식순</h2><div class="list" id="plist"><div class="line"></div></div></div></div>
-  <div class="replay">Space 다시 보기 · ? 단축키</div>
+  <div class="replay">↓ ↑ 진행 표시 · Space 다시 보기 · 0 메인 · ? 단축키</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -82,6 +87,7 @@ function buildList(arr){
   arr.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; const sp = document.createElement('span'); sp.className = 't';
     const n = document.createElement('span'); n.className = 'n'; n.textContent = String(i + 1).padStart(2, '0'); sp.appendChild(n); sp.appendChild(document.createTextNode(t)); d.appendChild(sp); frag.appendChild(d); });
   list.appendChild(frag); items = [...list.querySelectorAll('.it')];
+  if (typeof mark === 'function') mark();
 }
 function play(){                                                     // 선이 그어지고 → 한 줄씩 뒤집히며 열림
   clearT(); prog.classList.remove('on'); items.forEach(it => it.classList.remove('in')); void prog.offsetWidth;
@@ -89,6 +95,10 @@ function play(){                                                     // 선이 �
   items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(); }, 1000 + i * 150)));
 }
 function showAll(){ clearT(); prog.classList.add('on'); items.forEach(it => it.classList.add('in')); }
+/* 현재 순서 강조: ↓ 다음 / ↑ 이전 (화면을 오가도 유지) */
+let cur = (() => { const v = parseInt(localStorage.getItem('union20_prog_cur'), 10); return Number.isFinite(v) ? v : -1; })();
+function mark(){ cur = Math.max(-1, Math.min(items.length - 1, cur)); items.forEach((it, i) => { it.classList.toggle('cur', i === cur); it.classList.toggle('past', cur >= 0 && i < cur); }); }
+function move(d){ const next = Math.max(-1, Math.min(items.length - 1, cur + d)); if (next === cur) return; cur = next; localStorage.setItem('union20_prog_cur', String(cur)); showAll(); mark(); Snd.tick(); }
 const cached = (() => { try { const v = JSON.parse(localStorage.getItem('union20_program') || 'null'); return Array.isArray(v) && v.length ? v : null; } catch { return null; } })();
 let sb = null; try { sb = supabase.createClient('https://pmpifokwmrkqrmumycjx.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY'); } catch (e) {}
 async function fetchProgram(){
@@ -102,7 +112,11 @@ async function fetchProgram(){
   buildList(v || cached || DEFAULT_PROGRAM); play();
   setInterval(async () => { const n = await fetchProgram(); if (n && JSON.stringify(n) !== JSON.stringify(current)) { buildList(n); showAll(); } }, 30000);
 })();
-addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); play(); } });
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); play(); }
+  if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); move(1); }
+  if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); move(-1); }
+});
 addEventListener('click', () => play());
 </script>
 <script src="common.js"></script>
