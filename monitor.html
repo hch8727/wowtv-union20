@@ -359,10 +359,11 @@ setCount(0); tick(); setInterval(tick, POLL_MS);
   let t; const show = () => { document.body.classList.add('navon'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('navon'), 3000); };
   addEventListener('mousemove', show);
   addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-    const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m; });
+    });
 })();
 /* 간판 시계 */
 (() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
 </script>
+<script src="common.js"></script>
 </body>
 </html>

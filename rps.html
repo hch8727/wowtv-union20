@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>가위바위보 | 한국경제TV노조출석부</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9;--amber:#ffd36a}
   *{box-sizing:border-box}
@@ -133,7 +134,7 @@ function stop(){
 function reveal(i){
   state = 'result'; const w = WINNER[i], losers = [0, 1, 2].filter(x => x !== w).map(x => HANDS[x].n).join(' · ');
   $('rBig').textContent = HANDS[i].e; $('rName').textContent = HANDS[i].n;
-  $('rWho').innerHTML = `<b>${HANDS[w].e} ${HANDS[w].n}</b> 내신 분 생존!<i>${losers} 내신 분은 손을 내려주세요</i>`;
+  $('rWho').innerHTML = `<b>${HANDS[w].e} ${HANDS[w].n}</b> 내신 분 생존!<i>${losers} 내신 분은 자리에 앉아 주세요</i>`;
   $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
   document.body.classList.add('result'); Snd.stop();
   setCtrl('<button class="main" id="bNext">다음 라운드 (Space)</button><button id="bReset">처음부터</button>');
@@ -145,10 +146,10 @@ function reset(){ round = 1; clearTimeout(timer); idle(); }
 addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); ({ idle: start, spin: stop, result: next })[state]?.(); }
   if (e.key === 'r' || e.key === 'R') reset();
-  const m = { '0': 'screen.html', '1': 'monitor.html', '2': 'draw.html' }[e.key]; if (m) location.href = m;
 });
 $('snd').onclick = e => { e.currentTarget.textContent = Snd.toggle() ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐'; e.currentTarget.blur(); };
 idle();
 </script>
+<script src="common.js"></script>
 </body>
 </html>

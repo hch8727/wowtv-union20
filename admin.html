@@ -27,6 +27,21 @@
   nav button{border:0;background:transparent;color:var(--muted);padding:8px 12px}
   nav button.on{color:var(--ink);font-weight:700;background:var(--bg)}
   main{max-width:1100px;margin:0 auto;padding:24px}
+  .ctitle{margin:0 0 12px;font-size:15px}
+  .hint{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.6}
+  .upbtn{display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-size:14px;cursor:pointer;white-space:nowrap}
+  .signpv{display:inline-flex;align-items:center;gap:20px;padding:12px 22px 12px 14px;border-radius:20px;background:#0b2340;color:#fff}
+  .signpv .lg{background:#fff;border-radius:10px;padding:8px 14px}.signpv .lg img{height:34px;width:auto;display:block}
+  .signpv .r{display:flex;flex-direction:column;gap:2px;border-left:1px solid rgba(255,255,255,.18);padding-left:20px}
+  .signpv .t{font-size:14px;color:#8FE3FF;font-weight:600}.signpv .c{font-size:34px;font-weight:800;line-height:1.05}
+  .nrow,.srow{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .nrow:last-child,.srow:last-child{border-bottom:0}
+  .nrow .pg{width:150px;font-weight:600}.nrow .pg small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .nrow .nlabel{flex:1;min-width:140px}.srow .sname{width:140px}.srow .surl{flex:1;min-width:160px}
+  .keyin{width:56px;text-align:center;font-weight:800;text-transform:uppercase;cursor:pointer;caret-color:transparent}
+  .keyin:focus{outline:2px solid var(--primary,#00538E);background:#eef6ff}
+  .nrow button,.srow button{padding:6px 10px}
+  .srow .svol{width:90px}
   .panel{display:none}.panel.on{display:block}
   .prow{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
   .prow:last-child{border-bottom:0}
@@ -75,6 +90,8 @@
     <button data-p="att" class="on">출석 명단</button>
     <button data-p="prize">상품</button>
     <button data-p="prog">식순</button>
+    <button data-p="scr">화면</button>
+    <button data-p="snd">효과음</button>
     <button data-p="set">설정</button>
   </nav>
   <button id="logout">로그아웃</button>
@@ -122,12 +139,40 @@
   <!-- 식순 -->
   <section class="panel" id="p-prog">
     <div class="card">
-      <p style="margin:0 0 12px;color:var(--muted);font-size:13px">행사 화면(screen)의 "식순"에 표시됩니다. 위·아래 버튼으로 순서를 바꾸고, 저장을 눌러야 반영됩니다.</p>
+      <p style="margin:0 0 12px;color:var(--muted);font-size:13px">식순 화면(program.html)에 표시됩니다. 위·아래 버튼으로 순서를 바꾸고, 저장을 눌러야 반영됩니다.</p>
       <div id="progList"></div>
       <div class="bar" style="margin:12px 0 0">
         <input id="progNew" placeholder="새 순서 이름" style="flex:1"><button id="progAdd">추가</button>
         <button id="progSave" class="primary">저장</button>
       </div>
+    </div>
+  </section>
+
+  <!-- 화면: 로고·행사명 / 메뉴·단축키 -->
+  <section class="panel" id="p-scr">
+    <div class="card">
+      <h3 class="ctitle">로고 · 행사명</h3>
+      <div class="bar" style="margin:0 0 10px"><input id="bLogo" placeholder="로고 이미지 URL" style="flex:1"><label class="upbtn"><input type="file" id="bFile" accept="image/*" hidden><span id="bFileBtn">파일 업로드</span></label></div>
+      <div class="bar" style="margin:0 0 10px"><span style="color:var(--muted);font-size:13px;width:70px">로고 크기</span><input type="range" id="bH" min="20" max="90" style="flex:1"><span id="bHv" style="width:52px;text-align:right;font-variant-numeric:tabular-nums"></span></div>
+      <p class="hint" style="margin:-4px 0 10px">로고를 크게 하면 화면이 좁은 빔에서는 가운데 제목과 겹칠 수 있습니다. 보통 30~45px을 권장합니다.</p>
+      <div class="bar" style="margin:0 0 12px"><input id="bTitle" placeholder="행사명 (간판·식순 머리글)" style="flex:1"><input id="bOrg" placeholder="단체명 (출석 화면 문구)" style="flex:1"></div>
+      <div class="signpv"><div class="lg"><img id="bPrev" alt=""></div><div class="r"><div class="t" id="bPrevT"></div><div class="c">18:30</div></div></div>
+      <div class="bar" style="margin:12px 0 0;justify-content:flex-end"><button id="bSave" class="primary">저장</button></div>
+    </div>
+    <div class="card">
+      <h3 class="ctitle">메뉴 · 단축키</h3>
+      <p class="hint">행사 화면 위쪽 메뉴와 런처 카드의 순서·이름·표시 여부, 화면 이동 단축키를 정합니다. 단축키 칸을 누르고 키보드 키를 누르면 등록되고, Backspace로 지웁니다. Space·R·?는 예약되어 쓸 수 없습니다.</p>
+      <div id="navList"></div>
+      <div class="bar" style="margin:12px 0 0;justify-content:flex-end"><button id="navSave" class="primary">저장</button></div>
+    </div>
+  </section>
+
+  <!-- 효과음 -->
+  <section class="panel" id="p-snd">
+    <div class="card">
+      <p class="hint">행사 화면 어디서든 단축키로 재생됩니다(관리자 화면 제외). Esc를 누르면 재생 중인 효과음이 멈춥니다. 파일은 10MB 이하 mp3·wav·ogg·m4a를 올릴 수 있습니다.</p>
+      <div id="sndList"></div>
+      <div class="bar" style="margin:12px 0 0"><button id="sndAdd">효과음 추가</button><span style="flex:1"></span><button id="sndSave" class="primary">저장</button></div>
     </div>
   </section>
 
@@ -247,7 +292,106 @@ $('progSave').onclick = async () => {
   await rpc('admin_set', { k: 'program', v: JSON.stringify(list) }); progItems = list; renderProg(); toast('식순을 저장했습니다');
 };
 
-async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings(), loadProgram()]); setInterval(loadAtt, 5000); }
+/* ── 화면: 로고·행사명 / 메뉴·단축키 / 효과음 ── */
+const PAGE_LABEL = { 'monitor.html': '출석 현황', 'draw.html': '경품 추첨', 'program.html': '식순', 'rps.html': '가위바위보' };
+const DEF_NAV = [{ page: 'monitor.html', label: '출석 현황', key: '1', show: true }, { page: 'draw.html', label: '경품 추첨', key: '2', show: true }, { page: 'program.html', label: '식순', key: '3', show: true }, { page: 'rps.html', label: '가위바위보', key: '4', show: true }];
+const DEF_SOUNDS = [{ name: '박수', src: 'builtin:applause', key: 'q', vol: .9 }, { name: '팡파르', src: 'builtin:fanfare', key: 'w', vol: .9 }, { name: '딩동댕', src: 'builtin:ding', key: 'e', vol: .8 }];
+const DEF_BRAND = { logo: 'logo.png', h: 34, title: '창립 20주년 기념행사', org: '한국경제TV 노동조합' };
+const BUILTINS = [['builtin:applause', '박수 (기본)'], ['builtin:fanfare', '팡파르 (기본)'], ['builtin:ding', '딩동댕 (기본)'], ['builtin:drum', '드럼롤 (기본)']];
+const RESERVED = [' ', 'r', '?'];
+let navCfg = [], sndCfg = [], brandCfg = {};
+async function loadScreenCfg(){
+  const { data } = await sb.from('settings').select('key,value').in('key', ['nav', 'sounds', 'brand']);
+  const m = {}; (data || []).forEach(r => { try { m[r.key] = JSON.parse(r.value); } catch {} });
+  const nav = Array.isArray(m.nav) ? m.nav.filter(n => PAGE_LABEL[n.page]) : DEF_NAV.map(x => ({ ...x }));
+  Object.keys(PAGE_LABEL).forEach(pg => { if (!nav.some(n => n.page === pg)) nav.push({ page: pg, label: PAGE_LABEL[pg], key: '', show: false }); });   // 새로 생긴 화면은 숨김 상태로 추가
+  navCfg = nav; sndCfg = Array.isArray(m.sounds) ? m.sounds : DEF_SOUNDS.map(x => ({ ...x })); brandCfg = Object.assign({}, DEF_BRAND, m.brand || {});
+  renderBrand(); renderNavCfg(); renderSnd();
+}
+/* 단축키 칸: 한글 입력 상태와 무관하게 눌린 키 위치로 등록 */
+document.addEventListener('keydown', e => {
+  const el = e.target; if (!el.classList || !el.classList.contains('keyin')) return;
+  if (e.key === 'Tab') return; e.preventDefault();
+  if (e.key === 'Backspace' || e.key === 'Delete') { el.value = ''; return; }
+  const m = /^Key([A-Z])$/.exec(e.code) || /^(?:Digit|Numpad)(\d)$/.exec(e.code);
+  if (!m) return toast('영문 한 글자 또는 숫자만 쓸 수 있습니다');
+  const k = m[1].toLowerCase(); if (RESERVED.includes(k)) return toast(`${k.toUpperCase()}는 예약된 키입니다`);
+  el.value = k.toUpperCase();
+}, true);
+function keyProblems(navList, sndList){
+  const seen = {}, errs = [];
+  const chk = (k, who) => { k = (k || '').toLowerCase(); if (!k) return; if (!/^[a-z0-9]$/.test(k)) errs.push(`${who}: 영문 한 글자 또는 숫자만`); else if (RESERVED.includes(k)) errs.push(`${who}: ${k.toUpperCase()}는 예약된 키`); else if (seen[k]) errs.push(`${k.toUpperCase()} 키가 ${seen[k]}와(과) ${who}에 겹칩니다`); else seen[k] = who; };
+  navList.forEach(n => chk(n.key, `메뉴 "${n.label}"`)); sndList.forEach(s => chk(s.key, `효과음 "${s.name}"`));
+  return errs;
+}
+/* 로고·행사명 */
+function renderBrand(){ $('bLogo').value = brandCfg.logo || ''; $('bH').value = brandCfg.h || 34; $('bTitle').value = brandCfg.title || ''; $('bOrg').value = brandCfg.org || ''; previewBrand(); }
+function previewBrand(){ const h = +$('bH').value || 34; $('bHv').textContent = h + 'px'; $('bPrev').src = $('bLogo').value.trim() || 'logo.png'; $('bPrev').style.height = h + 'px'; $('bPrevT').textContent = $('bTitle').value; }
+['bLogo', 'bH', 'bTitle'].forEach(id => $(id).addEventListener('input', previewBrand));
+async function uploadMedia(file, folder, btn, label){
+  if (file.size > 10 * 1024 * 1024) { toast('10MB 이하 파일만 올릴 수 있습니다'); return null; }
+  btn.textContent = '업로드 중…';
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase(), path = `${folder}/${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from('media').upload(path, file, { contentType: file.type, upsert: false });
+  btn.textContent = label; if (error) { toast('업로드 실패: ' + error.message); return null; }
+  return sb.storage.from('media').getPublicUrl(path).data.publicUrl;
+}
+$('bFile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const url = await uploadMedia(f, 'logo', $('bFileBtn'), '파일 업로드'); if (url) { $('bLogo').value = url; previewBrand(); toast('업로드했습니다. 저장을 눌러 반영하세요'); } };
+$('bSave').onclick = async () => {
+  const b = { logo: $('bLogo').value.trim() || 'logo.png', h: Math.max(20, Math.min(90, +$('bH').value || 34)), title: $('bTitle').value.trim(), org: $('bOrg').value.trim() };
+  await rpc('admin_set', { k: 'brand', v: JSON.stringify(b) }); brandCfg = b; toast('로고·행사명을 저장했습니다');
+};
+/* 메뉴·단축키 */
+function renderNavCfg(){
+  $('navList').innerHTML = navCfg.map((n, i) => `<div class="nrow" data-i="${i}"><span class="pg">${PAGE_LABEL[n.page]}<small>${n.page}</small></span>
+    <input class="nlabel" value="${esc(n.label || PAGE_LABEL[n.page])}" placeholder="메뉴 이름"><input class="keyin" value="${esc((n.key || '').toUpperCase())}" placeholder="키" readonly title="누르고 키 입력">
+    <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="nshow" ${n.show !== false ? 'checked' : ''}> 메뉴에 보이기</label>
+    <button data-a="up" ${i === 0 ? 'disabled' : ''}>▲</button><button data-a="dn" ${i === navCfg.length - 1 ? 'disabled' : ''}>▼</button></div>`).join('');
+}
+const collectNav = () => [...document.querySelectorAll('#navList .nrow')].map((r, i) => ({ page: navCfg[i].page, label: r.querySelector('.nlabel').value.trim() || PAGE_LABEL[navCfg[i].page], key: r.querySelector('.keyin').value.toLowerCase(), show: r.querySelector('.nshow').checked }));
+$('navList').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; navCfg = collectNav(); const i = +b.closest('.nrow').dataset.i;
+  if (b.dataset.a === 'up' && i > 0) [navCfg[i - 1], navCfg[i]] = [navCfg[i], navCfg[i - 1]];
+  if (b.dataset.a === 'dn' && i < navCfg.length - 1) [navCfg[i + 1], navCfg[i]] = [navCfg[i], navCfg[i + 1]]; renderNavCfg(); });
+$('navSave').onclick = async () => {
+  const nav = collectNav(); if (!nav.some(n => n.show)) return toast('메뉴를 하나 이상 보이게 해 주세요');
+  const errs = keyProblems(nav, sndCfg); if (errs.length) return toast(errs[0]);
+  await rpc('admin_set', { k: 'nav', v: JSON.stringify(nav) }); navCfg = nav; toast('메뉴를 저장했습니다');
+};
+/* 효과음 */
+const isFile = s => !String(s.src || '').startsWith('builtin:');
+function renderSnd(){
+  $('sndList').innerHTML = sndCfg.map((s, i) => { const f = isFile(s); return `<div class="srow" data-i="${i}">
+    <input class="sname" value="${esc(s.name || '')}" placeholder="이름">
+    <select class="ssrc">${BUILTINS.map(([v, l]) => `<option value="${v}" ${s.src === v ? 'selected' : ''}>${l}</option>`).join('')}<option value="file" ${f ? 'selected' : ''}>업로드 파일</option></select>
+    <input class="surl" value="${f ? esc(s.src || '') : ''}" placeholder="파일 URL" style="${f ? '' : 'display:none'}">
+    <label class="upbtn" style="${f ? '' : 'display:none'}"><input type="file" class="sfile" accept="audio/*" hidden><span>파일</span></label>
+    <input class="keyin" value="${esc((s.key || '').toUpperCase())}" placeholder="키" readonly title="누르고 키 입력">
+    <input class="svol" type="range" min="0" max="100" value="${Math.round((s.vol ?? .9) * 100)}" title="볼륨">
+    <button data-a="play" title="미리 듣기">▶</button><button data-a="up" ${i === 0 ? 'disabled' : ''}>▲</button><button data-a="dn" ${i === sndCfg.length - 1 ? 'disabled' : ''}>▼</button><button data-a="del">삭제</button></div>`; }).join('')
+    || '<p class="hint" style="margin:0">등록된 효과음이 없습니다</p>';
+}
+const collectSnd = () => [...document.querySelectorAll('#sndList .srow')].map(r => { const sel = r.querySelector('.ssrc').value;
+  return { name: r.querySelector('.sname').value.trim(), src: sel === 'file' ? r.querySelector('.surl').value.trim() : sel, key: r.querySelector('.keyin').value.toLowerCase(), vol: +r.querySelector('.svol').value / 100 }; });
+$('sndList').addEventListener('change', async e => {
+  const r = e.target.closest('.srow'); if (!r) return;
+  if (e.target.classList.contains('ssrc')) { const f = e.target.value === 'file'; r.querySelector('.surl').style.display = f ? '' : 'none'; r.querySelector('.upbtn').style.display = f ? '' : 'none'; }
+  if (e.target.classList.contains('sfile')) { const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    const url = await uploadMedia(file, 'sounds', r.querySelector('.upbtn span'), '파일'); if (url) { r.querySelector('.surl').value = url; if (!r.querySelector('.sname').value.trim()) r.querySelector('.sname').value = file.name.replace(/\.[^.]+$/, ''); toast('업로드했습니다. 저장을 눌러 반영하세요'); } }
+});
+$('sndList').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; sndCfg = collectSnd(); const i = +b.closest('.srow').dataset.i;
+  if (b.dataset.a === 'play') { const s = sndCfg[i]; if (!s.src) return toast('소리를 먼저 지정하세요'); window.UnionCommon ? UnionCommon.playSound(s) : new Audio(s.src).play(); return; }
+  if (b.dataset.a === 'up' && i > 0) [sndCfg[i - 1], sndCfg[i]] = [sndCfg[i], sndCfg[i - 1]];
+  if (b.dataset.a === 'dn' && i < sndCfg.length - 1) [sndCfg[i + 1], sndCfg[i]] = [sndCfg[i], sndCfg[i + 1]];
+  if (b.dataset.a === 'del') sndCfg.splice(i, 1); renderSnd(); });
+$('sndAdd').onclick = () => { sndCfg = collectSnd(); sndCfg.push({ name: '', src: 'builtin:applause', key: '', vol: .9 }); renderSnd(); };
+$('sndSave').onclick = async () => {
+  const list = collectSnd();
+  const bad = list.findIndex(s => !s.name || !s.src); if (bad >= 0) return toast(`${bad + 1}번째 효과음의 이름과 소리를 입력하세요`);
+  const errs = keyProblems(navCfg, list); if (errs.length) return toast(errs[0]);
+  await rpc('admin_set', { k: 'sounds', v: JSON.stringify(list) }); sndCfg = list; toast('효과음을 저장했습니다');
+};
+
+async function init(){ await Promise.all([loadAtt(), loadPrizes(), loadSettings(), loadProgram(), loadScreenCfg()]); setInterval(loadAtt, 5000); }
 
 /* 출석 명단 */
 async function loadAtt(){
@@ -348,5 +492,7 @@ $('btnWipe').onclick = async () => {
   const n = await rpc('admin_clear_phones', {}); toast(`${n}명의 전화번호를 삭제했습니다`); loadAtt();
 };
 </script>
+<script>window.UNION_NO_KEYS = true;</script>
+<script src="common.js"></script>
 </body>
 </html>

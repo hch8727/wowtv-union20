@@ -55,7 +55,7 @@
 <body>
 <header>
   <img class="brand" src="logo.png" alt="한국경제TV">
-  <p>한국경제TV 노동조합 창립 20주년</p>
+  <p data-brand="orgtitle">한국경제TV 노동조합 창립 20주년</p>
   <small>출석 확인</small>
 </header>
 
@@ -78,7 +78,7 @@
     <div class="time" id="doneTime"></div>
   </section>
 </main>
-<footer>한국경제TV 노동조합</footer>
+<footer data-brand="org">한국경제TV 노동조합</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -143,5 +143,6 @@ function fail(t){ msg.textContent = t; msg.className = 'msg err'; }
   else store(TOKEN_KEY, null);
 })();
 </script>
+<script src="common.js"></script>
 </body>
 </html>

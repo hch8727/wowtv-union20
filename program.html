@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>식순 | 행사 화면</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root{--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9;--amber:#ffd36a}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:#07101e;color:#fff;overflow:hidden;position:relative;isolation:isolate;-webkit-user-select:none;user-select:none}
+  body.hasbg::after{content:"";position:fixed;inset:0;background:center/cover no-repeat;background-image:var(--bgimg);filter:contrast(1.25) saturate(1.15) brightness(.95) blur(4px);transform:scale(1.03);z-index:-2}
+  body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,6,20,.62);z-index:-1}
+  img{-webkit-user-drag:none;pointer-events:none}
+  .sign{position:fixed;left:36px;top:30px;display:flex;align-items:center;gap:20px;padding:12px 22px 12px 14px;border-radius:20px;background:rgba(0,25,55,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);pointer-events:none;z-index:5}
+  .sign .lg{background:#fff;border-radius:10px;padding:8px 14px}.sign .lg img{height:34px;width:auto;display:block}
+  .sign .r{display:flex;flex-direction:column;gap:2px;border-left:1px solid rgba(255,255,255,.18);padding-left:20px}
+  .sign .t{font-size:14px;color:var(--gold-soft);font-weight:600}
+  .sign .c{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+  .snav{position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:4px;background:rgba(0,0,0,.35);backdrop-filter:blur(8px);padding:4px;border-radius:999px;opacity:0;transition:opacity .3s;z-index:40;pointer-events:none}
+  body.navon .snav{opacity:1;pointer-events:auto}
+  .snav a{color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px}
+  .snav a.cur{background:var(--gold)}
+  #prog .wrap{position:absolute;left:50%;--top:max(8vh, calc(var(--sign-b, 0px) + 14px));top:var(--top);transform:translateX(-50%);width:min(820px,80vw);height:calc(100vh - var(--top) - 6vh);display:flex;flex-direction:column;align-items:center}
+  #prog .eyebrow{font-size:clamp(12px,1.4vh,16px);color:var(--gold-soft);letter-spacing:.3em;padding-left:.3em;margin-bottom:.6vh;opacity:0;transform:translateY(-14px);transition:opacity .5s,transform .5s}
+  #prog h2{margin:0;font-size:clamp(30px,4.8vh,48px);font-weight:800;letter-spacing:.5em;padding-left:.5em;text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:0;transform:translateY(-14px);transition:opacity .5s .1s,transform .5s .1s}
+  #prog.on .eyebrow,#prog.on h2{opacity:1;transform:none}
+  #prog .list{flex:1;width:100%;display:flex;flex-direction:column;justify-content:space-evenly;position:relative;margin-top:1vh}
+  #prog .line{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(transparent,rgba(255,211,106,.42) 6%,rgba(255,211,106,.42) 94%,transparent);box-shadow:0 0 8px rgba(255,211,106,.2);transform:scaleY(0);transform-origin:50% 0;transition:transform .7s cubic-bezier(.4,0,.2,1)}
+  #prog.on .line{transform:scaleY(1)}
+  #prog .it{position:relative;text-align:center;z-index:1}
+  #prog .it .t{transform:perspective(700px) rotateX(-92deg);opacity:0;transform-origin:50% 50%;transition:transform .6s cubic-bezier(.2,.9,.25,1),opacity .25s}
+  #prog .it.in .t{transform:perspective(700px) rotateX(0);opacity:1}
+  #prog .t{position:relative;display:inline-block;font-size:clamp(20px,3.3vh,32px);font-weight:700;letter-spacing:.02em;text-shadow:0 0 6px rgba(2,6,20,1),0 0 14px rgba(2,6,20,1),0 2px 10px rgba(0,0,0,.9)}
+  #prog .n{position:absolute;right:100%;margin-right:16px;top:50%;transform:translateY(-50%);font-size:clamp(11px,1.5vh,15px);color:var(--amber);letter-spacing:.08em;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(2,6,20,1)}
+  .replay{position:fixed;right:20px;bottom:16px;font-size:12px;color:var(--muted);opacity:.6}
+</style>
+</head>
+<body>
+  <div class="sign"><div class="lg"><img src="logo.png" alt=""></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
+  <nav class="snav"></nav>
+  <div id="prog"><div class="wrap"><div class="eyebrow" data-brand="title">창립 20주년 기념행사</div><h2>식순</h2><div class="list" id="plist"><div class="line"></div></div></div></div>
+  <div class="replay">Space 다시 보기 · ? 단축키</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULT_PROGRAM = ['개회', '20주년 기념 영상', '대표이사 축사', '언론노조 위원장 축사', '위원장 기념사', '깃발 세레머니', '특별 공로상 수여식', '우수 조합원 시상식', '경품 추첨', '건배 제의 및 만찬'];
+(() => { const t = new Image(); t.onload = () => { document.body.style.setProperty('--bgimg', 'url(draw_bg.jpg)'); document.body.classList.add('hasbg'); }; t.src = 'draw_bg.jpg'; })();
+(() => { const el = $('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
+
+/* 사운드: tick.mp3 / swoosh.mp3 있으면 사용, 없으면 합성 */
+const Snd = (() => {
+  let ctx; const ac = () => { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return ctx; };
+  const files = {}; ['tick', 'swoosh'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto'; a.onerror = () => { files[n] = null; }; a.oncanplaythrough = () => { files[n] = a; }; });
+  const play = (n, v = 1) => { const a = files[n]; if (!a) return false; const c = a.cloneNode(); c.volume = v; c.play().catch(() => {}); return true; };
+  const safe = f => (...a) => { try { f(...a); } catch (e) {} };
+  return {
+    tick: safe(() => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;                 // 카드 넘기는 "팔락" — 짧고 낮은 종이 소리
+      const b = c.createBuffer(1, c.sampleRate * .09, c.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) { const x = i / d.length; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, 2.5) * Math.min(1, x * 30); }
+      const s = c.createBufferSource(), f = c.createBiquadFilter(), f2 = c.createBiquadFilter(), g = c.createGain(); s.buffer = b;
+      f.type = 'bandpass'; f.frequency.value = 1100; f.Q.value = .7; f2.type = 'lowpass'; f2.frequency.value = 3000; g.gain.value = .5;
+      s.connect(f).connect(f2).connect(g).connect(c.destination); s.start(t);
+      const o = c.createOscillator(), og = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(90, t + .06);
+      og.gain.setValueAtTime(.12, t); og.gain.exponentialRampToValueAtTime(.001, t + .08); o.connect(og).connect(c.destination); o.start(t); o.stop(t + .09); }),
+    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;             // 선: 낮게 깔리는 은은한 스웰
+      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter(); o.type = 'triangle'; o.frequency.value = 196;
+      f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(1400, t + .6);
+      g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.07, t + .4); g.gain.exponentialRampToValueAtTime(.001, t + 1.1);
+      o.connect(f).connect(g).connect(c.destination); o.start(t); o.stop(t + 1.2); }),
+  };
+})();
+
+const prog = $('prog'), list = $('plist');
+let items = [], timers = [], current = [];
+const clearT = () => { timers.forEach(clearTimeout); timers = []; };
+function buildList(arr){
+  current = arr.slice(); list.querySelectorAll('.it').forEach(n => n.remove()); const frag = document.createDocumentFragment();
+  arr.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; const sp = document.createElement('span'); sp.className = 't';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = String(i + 1).padStart(2, '0'); sp.appendChild(n); sp.appendChild(document.createTextNode(t)); d.appendChild(sp); frag.appendChild(d); });
+  list.appendChild(frag); items = [...list.querySelectorAll('.it')];
+}
+function play(){                                                     // 선이 그어지고 → 한 줄씩 뒤집히며 열림
+  clearT(); prog.classList.remove('on'); items.forEach(it => it.classList.remove('in')); void prog.offsetWidth;
+  timers.push(setTimeout(() => { prog.classList.add('on'); Snd.swoosh(); }, 80));
+  items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(); }, 1000 + i * 150)));
+}
+function showAll(){ clearT(); prog.classList.add('on'); items.forEach(it => it.classList.add('in')); }
+const cached = (() => { try { const v = JSON.parse(localStorage.getItem('union20_program') || 'null'); return Array.isArray(v) && v.length ? v : null; } catch { return null; } })();
+let sb = null; try { sb = supabase.createClient('https://pmpifokwmrkqrmumycjx.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY'); } catch (e) {}
+async function fetchProgram(){
+  if (!sb) return null;
+  try { const { data } = await sb.from('settings').select('value').eq('key', 'program').maybeSingle();
+    const v = JSON.parse(data?.value || 'null'); if (!Array.isArray(v) || !v.length) return null;
+    localStorage.setItem('union20_program', JSON.stringify(v)); return v.map(String); } catch (e) { return null; }
+}
+(async () => {                                                        // 서버 식순을 먼저 받고(최대 1.5초) 시작 → 애니메이션 중간에 바뀌지 않게
+  const v = await Promise.race([fetchProgram(), new Promise(r => setTimeout(() => r(null), 1500))]);
+  buildList(v || cached || DEFAULT_PROGRAM); play();
+  setInterval(async () => { const n = await fetchProgram(); if (n && JSON.stringify(n) !== JSON.stringify(current)) { buildList(n); showAll(); } }, 30000);
+})();
+addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); play(); } });
+addEventListener('click', () => play());
+</script>
+<script src="common.js"></script>
+</body>
+</html>

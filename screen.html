@@ -4,148 +4,45 @@
 <meta charset="UTF-8">
 <link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>행사 화면 | 한국경제TV노조출석부</title>
+<title>행사 화면</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-  :root{--ink:#00538E;--ink-deep:#003660;--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9;--amber:#ffd36a}
+  :root{--gold:#1EC2F2;--gold-soft:#8FE3FF;--muted:#8fb0c9}
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
-  body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:#07101e;color:#fff;overflow:hidden;position:relative;isolation:isolate}
+  body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;background:#07101e;color:#fff;overflow:hidden;position:relative;isolation:isolate;-webkit-user-select:none;user-select:none}
   body.hasbg::after{content:"";position:fixed;inset:0;background:center/cover no-repeat;background-image:var(--bgimg);filter:contrast(1.25) saturate(1.15) brightness(.95);z-index:-2}
   body.hasbg::before{content:"";position:fixed;inset:0;background:rgba(2,10,30,.45);z-index:-1}
-  /* 좌상단 간판 */
+  img{-webkit-user-drag:none;pointer-events:none}
   .sign{position:fixed;left:36px;top:30px;display:flex;align-items:center;gap:20px;padding:12px 22px 12px 14px;border-radius:20px;background:rgba(0,25,55,.45);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);pointer-events:none;z-index:5}
   .sign .lg{background:#fff;border-radius:10px;padding:8px 14px}.sign .lg img{height:34px;width:auto;display:block}
   .sign .r{display:flex;flex-direction:column;gap:2px;border-left:1px solid rgba(255,255,255,.18);padding-left:20px}
-  .sign .t{font-size:14px;color:var(--gold-soft);font-weight:600;letter-spacing:.02em}
-  .sign .c{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:.02em}
-  /* 식순 버튼 (상단 중앙) */
-  #pbtn{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:30;background:rgba(0,0,0,.35);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:8px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;transition:background .2s}
-  #pbtn:hover{background:rgba(255,255,255,.18)}
-  #pbtn.on{background:var(--amber);color:#3a2600;border-color:var(--amber)}
-  /* 런처 */
+  .sign .t{font-size:14px;color:var(--gold-soft);font-weight:600}
+  .sign .c{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
   .launch{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px}
   h1{font-size:30px;font-weight:700;margin:0;color:var(--gold-soft)}
-  .grid{display:flex;gap:28px}
-  a.card{width:280px;padding:34px 28px;border-radius:22px;background:rgba(0,25,55,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);color:#fff;text-decoration:none;
-         display:flex;flex-direction:column;gap:12px;transition:transform .2s,background .2s}
+  #launchGrid{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;max-width:94vw}
+  a.card{width:250px;padding:30px 26px;border-radius:22px;background:rgba(0,25,55,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);color:#fff;text-decoration:none;display:flex;flex-direction:column;gap:12px;transition:transform .2s,background .2s}
   a.card:hover{transform:translateY(-4px);background:rgba(0,25,55,.7)}
   a.card .k{width:40px;height:40px;border-radius:12px;background:var(--gold);display:grid;place-items:center;font-weight:800;font-size:20px}
-  a.card b{font-size:26px}
-  a.card span{color:var(--muted);font-size:15px;line-height:1.5}
+  a.card b{font-size:24px}
+  a.card span{color:var(--muted);font-size:14px;line-height:1.5}
   .tip{color:var(--muted);font-size:14px;text-align:center;line-height:1.7;margin:0}
   .tip kbd{background:rgba(255,255,255,.15);padding:2px 8px;border-radius:6px;font-family:inherit}
-  /* 식순 오버레이 */
-  #prog{position:fixed;inset:0;z-index:20;background:rgba(2,6,20,0);backdrop-filter:blur(0);transition:background .6s,backdrop-filter .6s;pointer-events:none;visibility:hidden}
-  #prog.on{background:rgba(2,6,20,.62);backdrop-filter:blur(6px);pointer-events:auto;visibility:visible}
-  #prog .wrap{position:absolute;left:50%;top:8vh;transform:translateX(-50%);width:min(820px,80vw);height:84vh;display:flex;flex-direction:column;align-items:center}
-  #prog .eyebrow{font-size:clamp(12px,1.4vh,16px);color:var(--gold-soft);letter-spacing:.3em;padding-left:.3em;margin-bottom:.6vh;opacity:0;transform:translateY(-14px);transition:opacity .5s,transform .5s}
-  #prog h2{margin:0;font-size:clamp(30px,4.8vh,48px);font-weight:800;letter-spacing:.5em;padding-left:.5em;text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:0;transform:translateY(-14px);transition:opacity .5s .1s,transform .5s .1s}
-  #prog.on .eyebrow,#prog.on h2{opacity:1;transform:none}
-  #prog .list{flex:1;width:100%;display:flex;flex-direction:column;justify-content:space-evenly;position:relative;margin-top:1vh}
-  #prog .line{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(transparent,rgba(255,211,106,.42) 6%,rgba(255,211,106,.42) 94%,transparent);box-shadow:0 0 8px rgba(255,211,106,.2);transform:scaleY(0);transform-origin:50% 0;transition:transform .7s cubic-bezier(.4,0,.2,1)}
-  #prog.on .line{transform:scaleY(1)}
-  #prog.closing .line{transform-origin:50% 100%;transform:scaleY(0);transition:transform .45s ease-in}
-  #prog .it{position:relative;text-align:center;z-index:1;opacity:0;transition:opacity .4s}
-  #prog.on .it{opacity:1}
-  #prog .it .t{transform:perspective(700px) rotateX(-92deg);opacity:0;transform-origin:50% 50%;transition:transform .6s cubic-bezier(.2,.9,.25,1),opacity .25s}
-  #prog .it.in .t{transform:perspective(700px) rotateX(0);opacity:1}
-  #prog .it.out .t{transform:perspective(700px) rotateX(92deg);opacity:0;transition:transform .3s ease-in,opacity .25s}
-  #prog .t{position:relative;display:inline-block;font-size:clamp(20px,3.3vh,32px);font-weight:700;letter-spacing:.02em;text-shadow:0 0 6px rgba(2,6,20,1),0 0 14px rgba(2,6,20,1),0 2px 10px rgba(0,0,0,.9)}
-  #prog .n{position:absolute;right:100%;margin-right:16px;top:50%;transform:translateY(-50%);font-size:clamp(11px,1.5vh,15px);color:var(--amber);letter-spacing:.08em;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(2,6,20,1)}
-  /* 드래그·선택 방지 */
-  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-  img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
 </style>
 </head>
 <body>
-  <div class="sign"><div class="lg"><img src="logo.png" alt="한국경제TV"></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
-  <button id="pbtn">▾ 식순</button>
-
+  <div class="sign"><div class="lg"><img src="logo.png" alt=""></div><div class="r"><div class="t">창립 20주년 기념행사</div><div class="c" id="clock">--:--</div></div></div>
   <div class="launch">
-    <h1>노동조합 창립 20주년 · 행사 화면</h1>
-    <div class="grid">
-      <a class="card" href="monitor.html"><div class="k">1</div><b>출석 현황</b><span>실시간 카운트와 QR 코드. 행사 시작 전부터 띄워 두세요.</span></a>
-      <a class="card" href="draw.html"><div class="k">2</div><b>경품 추첨</b><span>상품 소개와 슬롯 릴 추첨. 관리자 비밀번호가 필요합니다.</span></a>
-      <a class="card" href="rps.html"><div class="k">3</div><b>가위바위보</b><span>화면이 멈추면 이긴 사람만 생존. 서버 불필요.</span></a>
-    </div>
-    <p class="tip">숫자키 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>으로 바로 이동 · <kbd>4</kbd> 또는 상단 버튼으로 식순 · <kbd>Esc</kbd> 닫기<br><kbd>F11</kbd> 전체화면을 권장합니다.</p>
+    <h1 data-brand="title">창립 20주년 기념행사</h1>
+    <div id="launchGrid"></div>
+    <p class="tip">카드 왼쪽 위 글자가 단축키입니다 · <kbd>?</kbd> 단축키 전체 보기 · <kbd>Esc</kbd> 효과음 정지<br><kbd>F11</kbd> 전체화면을 권장합니다. 메뉴와 단축키는 관리자 &gt; 화면 탭에서 바꿀 수 있습니다.</p>
   </div>
-
-  <div id="prog"><div class="wrap"><div class="eyebrow">창립 20주년 기념행사</div><h2>식순</h2><div class="list" id="plist"><div class="line"></div></div></div></div>
-
 <script>
-/* 식순 — 여기만 고치면 됩니다 */
-const PROGRAM = ['개회', '20주년 기념 영상', '대표이사 축사', '언론노조 위원장 축사', '위원장 기념사', '깃발 세레머니', '특별 공로상 수여식', '우수 조합원 시상식', '경품 추첨', '건배 제의 및 만찬'];
-
-const $ = id => document.getElementById(id);
-/* 배경: draw_bg.jpg 있으면 사용 */
 (() => { const t = new Image(); t.onload = () => { document.body.style.setProperty('--bgimg', 'url(draw_bg.jpg)'); document.body.classList.add('hasbg'); }; t.src = 'draw_bg.jpg'; })();
-/* 간판 시계 */
-(() => { const el = $('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
-
-/* 사운드: tick.mp3 / swoosh.mp3 있으면 사용, 없으면 합성 */
-const Snd = (() => {
-  let ctx; const ac = () => { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return ctx; };
-  const files = {}; ['tick', 'swoosh'].forEach(n => { const a = new Audio(n + '.mp3'); a.preload = 'auto'; a.onerror = () => { files[n] = null; }; a.oncanplaythrough = () => { files[n] = a; }; });
-  const play = (n, v = 1) => { const a = files[n]; if (!a) return false; const c = a.cloneNode(); c.volume = v; c.play().catch(() => {}); return true; };
-  const safe = f => (...a) => { try { f(...a); } catch (e) {} };
-  return {
-    tick: safe(() => { if (play('tick', .8)) return; const c = ac(), t = c.currentTime;                 // 카드 넘기는 "팔락" — 짧고 낮은 종이 소리
-      const b = c.createBuffer(1, c.sampleRate * .09, c.sampleRate), d = b.getChannelData(0);
-      for (let i = 0; i < d.length; i++) { const x = i / d.length; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, 2.5) * Math.min(1, x * 30); }
-      const s = c.createBufferSource(), f = c.createBiquadFilter(), f2 = c.createBiquadFilter(), g = c.createGain(); s.buffer = b;
-      f.type = 'bandpass'; f.frequency.value = 1100; f.Q.value = .7; f2.type = 'lowpass'; f2.frequency.value = 3000; g.gain.value = .5;
-      s.connect(f).connect(f2).connect(g).connect(c.destination); s.start(t);
-      const o = c.createOscillator(), og = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(90, t + .06);
-      og.gain.setValueAtTime(.12, t); og.gain.exponentialRampToValueAtTime(.001, t + .08); o.connect(og).connect(c.destination); o.start(t); o.stop(t + .09); }),
-    swoosh: safe(() => { if (play('swoosh', .7)) return; const c = ac(), t = c.currentTime;             // 선: 낮게 깔리는 은은한 스웰
-      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter(); o.type = 'triangle'; o.frequency.value = 196;
-      f.type = 'lowpass'; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(1400, t + .6);
-      g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(.07, t + .4); g.gain.exponentialRampToValueAtTime(.001, t + 1.1);
-      o.connect(f).connect(g).connect(c.destination); o.start(t); o.stop(t + 1.2); }),
-  };
-})();
-
-/* 식순 오버레이 */
-const prog = $('prog'), list = $('plist'), btn = $('pbtn');
-let open = false, timers = [];
-let items = [];
-function buildList(arr){
-  list.querySelectorAll('.it').forEach(n => n.remove()); const frag = document.createDocumentFragment();
-  arr.forEach((t, i) => { const d = document.createElement('div'); d.className = 'it'; const sp = document.createElement('span'); sp.className = 't';
-    const n = document.createElement('span'); n.className = 'n'; n.textContent = String(i + 1).padStart(2, '0'); sp.appendChild(n); sp.appendChild(document.createTextNode(t)); d.appendChild(sp); frag.appendChild(d); });
-  list.appendChild(frag); items = [...list.querySelectorAll('.it')];
-}
-buildList(PROGRAM);
-/* 관리자에서 저장한 식순이 있으면 교체 (열려 있지 않을 때만 반영) */
-(async () => {
-  try {
-    const sb = supabase.createClient('https://pmpifokwmrkqrmumycjx.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcGlmb2t3bXJrcXJtdW15Y2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0ODcsImV4cCI6MjEwNzczMDQ4N30.e4x2eWP33EyTq9_GoAyL9M8WXSzhMKeUdKv6RRLRScY');
-    const load = async () => { const { data } = await sb.from('settings').select('value').eq('key', 'program').maybeSingle();
-      const v = JSON.parse(data?.value || 'null'); if (Array.isArray(v) && v.length && !open && JSON.stringify(v) !== JSON.stringify(PROGRAM)) { PROGRAM.length = 0; v.forEach(x => PROGRAM.push(String(x))); buildList(PROGRAM); } };
-    await load(); setInterval(load, 30000);
-  } catch (e) {}
-})();
-const clearT = () => { timers.forEach(clearTimeout); timers = []; };
-function show(){
-  if (open) return; open = true; clearT(); prog.classList.remove('closing'); prog.classList.add('on'); btn.classList.add('on'); btn.textContent = '▴ 식순 닫기';
-  items.forEach(it => it.classList.remove('in', 'out'));
-  timers.push(setTimeout(Snd.swoosh, 150));                                            // 선이 내려오는 소리
-  items.forEach((it, i) => timers.push(setTimeout(() => { it.classList.add('in'); Snd.tick(); }, 950 + i * 150)));   // 선 다 내려온 뒤 탁·탁·탁
-}
-function hide(){
-  if (!open) return; open = false; clearT(); btn.classList.remove('on'); btn.textContent = '▾ 식순';
-  items.forEach(it => { it.classList.remove('in'); it.classList.add('out'); }); prog.classList.add('closing');
-  timers.push(setTimeout(() => { prog.classList.remove('on', 'closing'); items.forEach(it => it.classList.remove('out')); }, 500));
-}
-btn.onclick = () => { open ? hide() : show(); btn.blur(); };
-addEventListener('keydown', e => {
-  if (e.key === 'Escape') { hide(); return; }
-  if (e.key === '4') { open ? hide() : show(); return; }
-  const m = { '1': 'monitor.html', '2': 'draw.html', '3': 'rps.html' }[e.key]; if (m) location.href = m;
-});
+(() => { const el = document.getElementById('clock'); const tick = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; tick(); setInterval(tick, 1000); })();
 </script>
+<script src="common.js"></script>
 </body>
 </html>
